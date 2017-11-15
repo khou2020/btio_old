@@ -121,6 +121,8 @@
       t = MPI_Wtime() - t
       call MPI_Reduce(t, tmax, 1, MPI_DOUBLE_PRECISION, MPI_MAX,  &
                       root, MPI_COMM_WORLD, err)
+      
+      call report_io_performance(t, nprocs, root, io_method)
 
       if ( rank .eq. root ) then
          striping_factor = 0
@@ -132,44 +134,33 @@
 
          navg = n3 * 5 * 8       ! I/O amount per write/read
          navg = navg * num_io    ! I/O amount for all write/read
-         navg = navg / 1048576.0 ! I/O amount in MB
 
- 2000    FORMAT(A)
- 2001    FORMAT(A, A)
- 2002    FORMAT(A, I9)
- 2003    FORMAT(A, I9, A)
- 2004    FORMAT(A, F12.2)
- 2005    FORMAT(A, F12.2, A)
+2000  format('#%$: ', A, ': ', A)
+2001  format('#%$: ', A, ': ', F16.2)
+2002  format('#%$: ', A, ': ', I13)
 
          if (io_mode .EQ. 'w') then
-            print 2000,'-- BT-IO Benchmark (write operation only) --'
+            print 2000,'io_mode', 'write'
          else
-            print 2000,'-- BT-IO Benchmark (read  operation only) --'
+            print 2000,'io_mode', 'read'
          endif
-         print 2002,'Number of MPI processes  : ',nprocs
-         print 2002,'Global array size X      : ',grid_points(1)
-         print 2002,'Global array size Y      : ',grid_points(2)
-         print 2002,'Global array size Z      : ',grid_points(3)
-         print 2002,'Number of I/O iterations : ',niter
-         print 2005,'Totail I/O amount        : ',navg, ' MiB'
-         print 2004,'Time in sec              : ',tmax
+         print 2002,'n_proc', nprocs
+         print 2002,'size_x', grid_points(1)
+         print 2002,'size_y', grid_points(2)
+         print 2002,'size_z', grid_points(3)
+         print 2002,'n_itr', niter
+         
+         print 2001,'io_size', navg
 
-         navg = navg / tmax      ! I/O Bandwidth in MB/s
-         print 2005,'I/O bandwidth            : ',navg, ' MiB/s'
-
-         print 2000, '------------------------------------------'
-         if (io_method .EQ. 0) then ! 0: collective I/O, 1: independent I/O
-            print 2000,'Using MPI collective I/O method'
-         elseif (io_method .EQ. 1) then
-            print 2000,'Using MPI independent I/O method'
-         elseif (io_method .EQ. 2) then
-            print 2000,'Using Parallel netCDF blocking I/O method'
+         if (io_method > 1) then ! 0: collective I/O, 1: independent I/O
+            print 2000,'api', 'mpiio'
          else
-            print 2000,'Using Parallel netCDF non-blocking I/O method'
+            print 2000,'api', 'pnetcdf'  
          endif
-         print 2001,'output file path         : ',trim(dir_path)
-         print 2002,'file striping count      : ',striping_factor
-         print 2003,'file striping size       : ',striping_unit,' bytes'
+
+         print 2000,'file_name',trim(dir_path)
+         print 2002,'stripe_count',striping_factor
+         print 2002,'stripe_size',striping_unit,' bytes'
 
       endif
       if (info_used .NE. MPI_INFO_NULL) &
@@ -179,3 +170,148 @@
 
       end program main
 
+      !---------------------------------------------------------------------------
+      ! print I/O performance numbers
+      !---------------------------------------------------------------------------
+      subroutine report_io_performance(btio_time, NumPEs, root, io_method)
+            use pnetcdf
+            use mpi
+            integer root, NumPEs, io_method
+            double precision btio_time
+
+            ! local variables
+            integer ierr
+            integer(kind=MPI_OFFSET_KIND) malloc_size, sum_size
+            integer(kind=MPI_OFFSET_KIND) bb_data, bb_meta, bb_buffer
+            integer(kind=MPI_OFFSET_KIND) bb_meta_all, bb_data_all, bb_buffer_all
+            double precision time_io_max, time_io_min, time_io_mean, time_io_var
+            double precision bb_time(13), bb_time_max(13), bb_time_min(13), bb_time_mean(13), bb_time_var(13)
+            double precision var(13), total_max, total_min, total_mean, total_var
+            double precision time_staging
+
+            err = nfmpi_inq_bb_time( bb_time(1), bb_time(2), bb_time(3), bb_time(4), bb_time(5), bb_time(6))
+            err = nfmpi_inq_bb_time_put(bb_time(7), bb_time(8), bb_time(9))
+            err = nfmpi_inq_bb_time_flush(bb_time(10), bb_time(11), bb_time(12), bb_time(13))
+            err = nfmpi_inq_bb_size(bb_data, bb_meta, bb_buffer)
+
+            call MPI_Reduce(btio_time, time_io_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(btio_time, time_io_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(btio_time, time_io_mean, 1, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            time_io_mean = time_io_mean / NumPEs
+            var = (btio_time - time_io_mean) * (btio_time - time_io_mean)
+            call MPI_Reduce(var, time_io_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            time_io_var = time_io_var / NumPEs
+
+            call MPI_Reduce(bb_time, bb_time_max, 13, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_time, bb_time_min, 13, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(bb_time, bb_time_mean, 13, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            do 180 i = 1, 13
+                  bb_time_mean(i) = bb_time_mean(i) / NumPEs
+                  var(i) = (bb_time(i) - bb_time_mean(i)) * (bb_time(i) - bb_time_mean(i))
+180         continue
+            call MPI_Reduce(var, bb_time_var, 13, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            do 190 i = 1, 13
+                  bb_time_var(i) = bb_time_var(i) / NumPEs
+190         continue
+
+            call MPI_Reduce(bb_meta, bb_meta_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_data, bb_data_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_buffer, bb_buffer_all, 1, MPI_OFFSET, MPI_max, root, MPI_COMM_WORLD, ierr)
+
+            if (MyPE .EQ. root) then
+            
+                  call nfmpi_stage_out_env(time_staging)
+
+1007  format(A,A)
+1008  format('#%$: ', A, ': ', F16.2)
+1009  format('#%$: ', A, ': ', I13)
+1010  format('#%$: ', A, ': ', A)
+1011  format('#%$: ', A, ': ', F16.4)
+
+                  
+                  print 1009,' number_of_processes', NumPEs
+
+                  if ((io_method .EQ. 3) .AND. (io_method .EQ. 5)) then
+                        print 1010,' nonblocking_io', '1'
+                  else
+                        print 1010,' nonblocking_io', '0'
+                  endif
+                  if (io_method > 3) then
+                        print 1010,' indep_io','1' 
+                  else
+                        print 1010,' indep_io', '0'
+                  endif
+
+                  print 1008,' btio_time_max        ', time_io_max
+                  print 1008,' btio_time_min        ', time_io_min
+                  print 1008,' btio_time_mean        ', time_io_mean
+                  print 1008,' btio_time_var        ', time_io_var
+
+                  print 1008,' total_time_max        ', time_io_max + time_staging
+                  print 1008,' total_time_min        ', time_io_min + time_staging
+                  print 1008,' total_time_mean        ', time_io_mean + time_staging
+                  print 1008,' total_time_var        ', time_io_var
+
+                  print 1008,' stage_time       ', time_staging
+
+                  print 1008,' bb_total_time_max       ', bb_time_max(1)
+                  print 1008,' bb_create_time_max       ', bb_time_max(2)
+                  print 1008,' bb_enddef_time_max       ', bb_time_max(3)
+                  print 1008,' bb_put_time_max       ', bb_time_max(4)
+                  print 1008,' bb_flush_time_max       ', bb_time_max(5)
+                  print 1008,' bb_close_time_max       ', bb_time_max(6)
+                  print 1008,' bb_put_data_wr_time_max       ', bb_time_max(7)
+                  print 1008,' bb_put_meta_wr_time_max       ', bb_time_max(8)
+                  print 1008,' bb_put_num_wr_time_max       ', bb_time_max(9)
+                  print 1008,' bb_flush_replay_time_max       ', bb_time_max(10)
+                  print 1008,' bb_flush_data_rd_time_max       ', bb_time_max(11)
+                  print 1008,' bb_flush_put_time_max       ', bb_time_max(12)
+                  print 1008,' bb_flush_wait_time_max       ', bb_time_max(13)
+
+                  print 1008,' bb_total_time_min       ', bb_time_min(1)
+                  print 1008,' bb_create_time_min       ', bb_time_min(2)
+                  print 1008,' bb_enddef_time_min       ', bb_time_min(3)
+                  print 1008,' bb_put_time_min       ', bb_time_min(4)
+                  print 1008,' bb_flush_time_min       ', bb_time_min(5)
+                  print 1008,' bb_close_time_min       ', bb_time_min(6)
+                  print 1008,' bb_put_data_wr_time_min       ', bb_time_min(7)
+                  print 1008,' bb_put_meta_wr_time_min       ', bb_time_min(8)
+                  print 1008,' bb_put_num_wr_time_min       ', bb_time_min(9)
+                  print 1008,' bb_flush_replay_time_min       ', bb_time_min(10)
+                  print 1008,' bb_flush_data_rd_time_min       ', bb_time_min(11)
+                  print 1008,' bb_flush_put_time_min       ', bb_time_min(12)
+                  print 1008,' bb_flush_wait_time_min       ', bb_time_min(13)
+
+                  print 1008,' bb_total_time_mean       ', bb_time_mean(1)
+                  print 1008,' bb_create_time_mean       ', bb_time_mean(2)
+                  print 1008,' bb_enddef_time_mean       ', bb_time_mean(3)
+                  print 1008,' bb_put_time_mean       ', bb_time_mean(4)
+                  print 1008,' bb_flush_time_mean       ', bb_time_mean(5)
+                  print 1008,' bb_close_time_mean       ', bb_time_mean(6)
+                  print 1008,' bb_put_data_wr_time_mean       ', bb_time_mean(7)
+                  print 1008,' bb_put_meta_wr_time_mean       ', bb_time_mean(8)
+                  print 1008,' bb_put_num_wr_time_mean       ', bb_time_mean(9)
+                  print 1008,' bb_flush_replay_time_mean       ', bb_time_mean(10)
+                  print 1008,' bb_flush_data_rd_time_mean       ', bb_time_mean(11)
+                  print 1008,' bb_flush_put_time_mean       ', bb_time_mean(12)
+                  print 1008,' bb_flush_wait_time_mean       ', bb_time_mean(13)
+
+                  print 1011,' bb_total_time_var       ', bb_time_var(1)
+                  print 1011,' bb_create_time_var       ', bb_time_var(2)
+                  print 1011,' bb_enddef_time_var       ', bb_time_var(3)
+                  print 1011,' bb_put_time_var       ', bb_time_var(4)
+                  print 1011,' bb_flush_time_var       ', bb_time_var(5)
+                  print 1011,' bb_close_time_var       ', bb_time_var(6)
+                  print 1011,' bb_put_data_wr_time_var       ', bb_time_var(7)
+                  print 1011,' bb_put_meta_wr_time_var       ', bb_time_var(8)
+                  print 1011,' bb_put_num_wr_time_var       ', bb_time_var(9)
+                  print 1011,' bb_flush_replay_time_var       ', bb_time_var(10)
+                  print 1011,' bb_flush_data_rd_time_var       ', bb_time_var(11)
+                  print 1011,' bb_flush_put_time_var       ', bb_time_var(12)
+                  print 1011,' bb_flush_wait_time_var       ', bb_time_var(13)
+
+                  print 1009,' bb_metadata_size       ', bb_meta_all
+                  print 1009,' bb_data_size       ', bb_data_all
+                  print 1009,' bb_flush_buffer_size       ', bb_buffer_all
+            endif
+      end subroutine report_io_performance

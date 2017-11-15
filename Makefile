@@ -13,7 +13,7 @@
 
 MPIF90      = mpif90
 FCFLAGS     = -O2
-PNETCDF_DIR = $(HOME)/local/ncmpi_log
+PNETCDF_DIR = $(HOME)/local/ncmpi_eval
 
 COMPILE_F90  = $(MPIF90) $(FCFLAGS) $(INC) -c
 LINK         = $(MPIF90) $(FCFLAGS)
