@@ -16,7 +16,8 @@
           integer                      i, nkeys, valuelen, err
           logical                      flag
 
- 2011     FORMAT('    ',A32,' = ',A)
+2000  format('#%$: ', A, ': ', A)
+2011     FORMAT('    ',A32,' = ',A)
           call MPI_Info_get_nkeys(info, nkeys, err)
           print *, '---- MPI file info used ----'
           do i=0, nkeys-1
@@ -27,7 +28,7 @@
               value(valuelen+1:) = ' '
               if (key(len_trim(key):len_trim(key)) .EQ. char(0)) &
                   key(len_trim(key):) = ' '
-              print 2011, trim(key), trim(value)
+              print 2000, trim(key), trim(value)
           enddo
           print *
       end subroutine print_io_hints

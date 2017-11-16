@@ -17,7 +17,7 @@
       integer i, err, argc, iargc, fstatus, io_method
       integer*8 n3
       integer striping_factor, striping_unit
-      double precision navg, t, tmax
+      double precision navg, t, t1, t2, t3, t4, tmax
 
       call MPI_Init(err)
       call MPI_Comm_size(MPI_COMM_WORLD, nprocs, err)
@@ -80,6 +80,12 @@
 
       call make_set
 
+      !---------------------------------------------------------------------
+      !      Synchronize before placing time stamp
+      !---------------------------------------------------------------------
+      call MPI_Barrier(MPI_COMM_WORLD, err)
+
+      t1 = MPI_Wtime()
       if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
          err = mpiio_setup(io_mode)
       else
@@ -87,13 +93,9 @@
       endif
       if (err .EQ. 0) goto 999
 
-      !---------------------------------------------------------------------
-      !      Synchronize before placing time stamp
-      !---------------------------------------------------------------------
-      call MPI_Barrier(MPI_COMM_WORLD, err)
-      t = MPI_Wtime()
-      num_io = 0
+      t2 = MPI_Wtime()
 
+      num_io = 0
       do i=1, niter
          if (io_mode .EQ. 'w') then
             if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
@@ -110,6 +112,8 @@
          endif
       end do
 
+      t3 = MPI_Wtime()
+
       if (io_method .LT. 2) then ! 0: collective I/O, 1: independent I/O
          call mpiio_cleanup
       else
@@ -118,11 +122,12 @@
 
       call deallocate_variables
 
-      t = MPI_Wtime() - t
+      t4 = MPI_Wtime()
+      t = t4 - t1
       call MPI_Reduce(t, tmax, 1, MPI_DOUBLE_PRECISION, MPI_MAX,  &
                       root, MPI_COMM_WORLD, err)
       
-      call report_io_performance(t, nprocs, root, io_method)
+      call report_io_performance(t, t2 - t1, t3 - t2, t4 - t3, rank, nprocs, root, io_method)
 
       if ( rank .eq. root ) then
          striping_factor = 0
@@ -160,7 +165,7 @@
 
          print 2000,'file_name',trim(dir_path)
          print 2002,'stripe_count',striping_factor
-         print 2002,'stripe_size',striping_unit,' bytes'
+         print 2002,'stripe_size',striping_unit
 
       endif
       if (info_used .NE. MPI_INFO_NULL) &
@@ -173,11 +178,11 @@
       !---------------------------------------------------------------------------
       ! print I/O performance numbers
       !---------------------------------------------------------------------------
-      subroutine report_io_performance(btio_time, NumPEs, root, io_method)
+      subroutine report_io_performance(btio_time, init_time, rw_time, close_time, rank, NumPEs, root, io_method)
             use pnetcdf
             use mpi
-            integer root, NumPEs, io_method
-            double precision btio_time
+            integer root, NumPEs, io_method, rank
+            double precision btio_time, init_time, rw_time, close_time
 
             ! local variables
             integer ierr
@@ -185,6 +190,9 @@
             integer(kind=MPI_OFFSET_KIND) bb_data, bb_meta, bb_buffer
             integer(kind=MPI_OFFSET_KIND) bb_meta_all, bb_data_all, bb_buffer_all
             double precision time_io_max, time_io_min, time_io_mean, time_io_var
+            double precision time_init_max, time_init_min, time_init_mean, time_init_var
+            double precision time_rw_max, time_rw_min, time_rw_mean, time_rw_var
+            double precision time_close_max, time_close_min, time_close_mean, time_close_var
             double precision bb_time(13), bb_time_max(13), bb_time_min(13), bb_time_mean(13), bb_time_var(13)
             double precision var(13), total_max, total_min, total_mean, total_var
             double precision time_staging
@@ -198,9 +206,33 @@
             call MPI_Reduce(btio_time, time_io_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
             call MPI_Allreduce(btio_time, time_io_mean, 1, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
             time_io_mean = time_io_mean / NumPEs
-            var = (btio_time - time_io_mean) * (btio_time - time_io_mean)
-            call MPI_Reduce(var, time_io_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            var(1) = (btio_time - time_io_mean) * (btio_time - time_io_mean)
+            call MPI_Reduce(var(1), time_io_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
             time_io_var = time_io_var / NumPEs
+
+            call MPI_Reduce(init_time, time_init_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(init_time, time_init_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(init_time, time_init_mean, 1, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            time_init_mean = time_init_mean / NumPEs
+            var(1) = (init_time - time_init_mean) * (init_time - time_init_mean)
+            call MPI_Reduce(var(1), time_init_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            time_io_var = time_io_var / NumPEs
+
+            call MPI_Reduce(rw_time, time_rw_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(rw_time, time_rw_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(rw_time, time_rw_mean, 1, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            time_rw_mean = time_rw_mean / NumPEs
+            var(1) = (rw_time - time_rw_mean) * (rw_time - time_rw_mean)
+            call MPI_Reduce(var(1), time_rw_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            time_rw_var = time_rw_var / NumPEs
+
+            call MPI_Reduce(close_time, time_close_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(close_time, time_close_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(close_time, time_close_mean, 1, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            time_close_mean = time_close_mean / NumPEs
+            var(1) = (close_time - time_close_mean) * (close_time - time_close_mean)
+            call MPI_Reduce(var(1), time_close_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            time_close_var = time_close_var / NumPEs
 
             call MPI_Reduce(bb_time, bb_time_max, 13, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
             call MPI_Reduce(bb_time, bb_time_min, 13, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
@@ -218,7 +250,7 @@
             call MPI_Reduce(bb_data, bb_data_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
             call MPI_Reduce(bb_buffer, bb_buffer_all, 1, MPI_OFFSET, MPI_max, root, MPI_COMM_WORLD, ierr)
 
-            if (MyPE .EQ. root) then
+            if (rank .EQ. root) then
             
                   call nfmpi_stage_out_env(time_staging)
 
@@ -231,7 +263,7 @@
                   
                   print 1009,' number_of_processes', NumPEs
 
-                  if ((io_method .EQ. 3) .AND. (io_method .EQ. 5)) then
+                  if ((io_method .EQ. 3) .OR. (io_method .EQ. 5)) then
                         print 1010,' nonblocking_io', '1'
                   else
                         print 1010,' nonblocking_io', '0'
@@ -241,6 +273,21 @@
                   else
                         print 1010,' indep_io', '0'
                   endif
+
+                  print 1008,' init_time_max        ', time_init_max
+                  print 1008,' init_time_min        ', time_init_min
+                  print 1008,' init_time_mean        ', time_init_mean
+                  print 1008,' init_time_var        ', time_init_var
+
+                  print 1008,' rw_time_max        ', time_rw_max
+                  print 1008,' rw_time_min        ', time_rw_min
+                  print 1008,' rw_time_mean        ', time_rw_mean
+                  print 1008,' rw_time_var        ', time_rw_var
+
+                  print 1008,' close_time_max        ', time_close_max
+                  print 1008,' close_time_min        ', time_close_min
+                  print 1008,' close_time_mean        ', time_close_mean
+                  print 1008,' close_time_var        ', time_close_var
 
                   print 1008,' btio_time_max        ', time_io_max
                   print 1008,' btio_time_min        ', time_io_min

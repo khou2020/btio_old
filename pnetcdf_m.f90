@@ -15,7 +15,7 @@
       integer(KIND=MPI_OFFSET_KIND) global_five_dbl, num_dumps
       integer(KIND=MPI_OFFSET_KIND) put_size, get_size
       integer, allocatable :: buftypes(:), reqs(:), sts(:)
-      logical doNonBlockingIO
+      logical doNonBlockingIO, doIndepIO
 
       private :: check
 
@@ -84,8 +84,14 @@
 
       pnetcdf_setup = 1
 
-      if (io_method .EQ. 2) doNonBlockingIO = .FALSE.
-      if (io_method .EQ. 3) doNonBlockingIO = .TRUE.
+      if ((io_method .EQ. 2) .OR. (io_method .EQ. 4)) doNonBlockingIO = .FALSE.
+      if ((io_method .EQ. 3) .OR. (io_method .EQ. 5)) doNonBlockingIO = .TRUE.
+
+      if (io_method > 3) then
+          doIndepIO = .TRUE.
+      else
+          doIndepIO = .FALSE.
+      endif
 
       call create_buffer_type
 
@@ -160,6 +166,11 @@
       err = nfmpi_enddef(ncid)
       if (err .ne. NF_NOERR) call check(err, 'In nfmpi_enddef:')
 
+      if (doIndepIO) then
+         err = nfmpi_begin_indep_data(ncid)
+         if (err .ne. NF_NOERR) call check(err, 'In nfmpi_begin_indep_data:')
+      endif
+
       end subroutine pnetcdf_define
 
       !----< pnetcdf_inquiry >-------------------------------------------
@@ -233,18 +244,29 @@
 
          if (doNonBlockingIO) then
              err = nfmpi_iput_vara(ncid, varid, starts, counts, &
-                                   u(:,:,:,:,c), nReqs, buftypes(c), reqs(c))
+                            u(:,:,:,:,c), nReqs, buftypes(c), reqs(c))
              if (err .ne. NF_NOERR) call check(err, 'In nfmpi_iput_vara:')
          else
-             err = nfmpi_put_vara_all(ncid, varid, starts, counts, &
-                                      u(:,:,:,:,c), nReqs, buftypes(c))
-             if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara_all:')
+             if (doIndepIO) then
+                 err = nfmpi_put_vara(ncid, varid, starts, counts, &
+                                        u(:,:,:,:,c), nReqs, buftypes(c))
+                 if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara:')
+             else
+                 err = nfmpi_put_vara_all(ncid, varid, starts, counts, &
+                                        u(:,:,:,:,c), nReqs, buftypes(c))
+                 if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara_all:')
+             endif
          endif
       enddo
 
       if (doNonBlockingIO) then
-          err = nfmpi_wait_all(ncid, ncells, reqs, sts)
-          if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
+          if (doIndepIO) then
+             err = nfmpi_wait(ncid, ncells, reqs, sts)
+             if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait:')
+          else
+             err = nfmpi_wait_all(ncid, ncells, reqs, sts)
+             if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
+          endif
       endif
 
       do c = 1, ncells
@@ -309,6 +331,11 @@
 
       err = nfmpi_inq_put_size(ncid, put_size)
       err = nfmpi_inq_get_size(ncid, get_size)
+
+      if (doIndepIO) then
+         err = nfmpi_begin_indep_data(ncid)
+         if (err .ne. NF_NOERR) call check(err, 'In nfmpi_begin_indep_data:')
+      endif
 
       err = nfmpi_close(ncid)
       if (err .ne. NF_NOERR) call check(err, 'In nfmpi_close: ')
