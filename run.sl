@@ -3,12 +3,12 @@
 #SBATCH -N 1 
 #SBATCH -C haswell
 #SBATCH -t 00:10:00
-#SBATCH -o ior_1.txt
+#SBATCH -o btio_debug.txt
 #DW jobdw capacity=1289GiB access_mode=striped type=scratch pool=sm_pool
 
 RUNS=(1) # Number of runs
-OUTDIR=/global/cscratch1/sd/khl7265/FS_64_8M/ior
-BBDIR=${DW_JOB_STRIPED}ior
+OUTDIR=/global/cscratch1/sd/khl7265/FS_64_8M/btio
+BBDIR=${DW_JOB_STRIPED}btio
 NN=${SLURM_NNODES}
 let NP=NN*1
 #let NP=NN*32 
