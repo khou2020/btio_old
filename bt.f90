@@ -145,9 +145,9 @@
 2002  format('#%$: ', A, ': ', I13)
 
          if (io_mode .EQ. 'w') then
-            print 2000,'io_mode', 'write'
+            print 2000,'io_operation', 'write'
          else
-            print 2000,'io_mode', 'read'
+            print 2000,'io_operation', 'read'
          endif
          print 2002,'n_proc', nprocs
          print 2002,'size_x', grid_points(1)
