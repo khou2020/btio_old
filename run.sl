@@ -16,7 +16,7 @@ let NP=NN*1
 DIMX=512
 DIMY=512
 DIMZ=512
-NITR=100
+NITR=1 # 1 Itr = 5 GiB
 
 echo "mkdir -p ${OUTDIR}"
 mkdir -p ${OUTDIR}
