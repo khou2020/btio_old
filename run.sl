@@ -23,22 +23,22 @@ mkdir -p ${OUTDIR}
 echo "mkdir -p ${BBDIR}"
 mkdir -p ${BBDIR}
 
-for u in blocking nonblocking
+for i in ${RUNS[@]}
 do
-    for v in coll indep
+    for u in blocking nonblocking
     do
-        let IO_METHOD=2
-        if [ "x${u}" = "xnonblocking" ]; then
-            let IO_METHOD=IO_METHOD+1
-        fi
-        if [ "x${v}" = "xindep" ]; then
-            let IO_METHOD=IO_METHOD+2
-        fi
-        
-        # Ncmpi
-        if [ "x${v}" = "xcoll" ]; then
-            for i in ${RUNS[@]}
-            do
+        for v in coll indep
+        do
+            let IO_METHOD=2
+            if [ "x${u}" = "xnonblocking" ]; then
+                let IO_METHOD=IO_METHOD+1
+            fi
+            if [ "x${v}" = "xindep" ]; then
+                let IO_METHOD=IO_METHOD+2
+            fi
+            
+            # Ncmpi
+            if [ "x${v}" = "xcoll" ]; then
                 echo "rm -f ${OUTDIR}/*"
                 rm -f ${OUTDIR}/*
 
@@ -53,17 +53,14 @@ do
 
                 echo "ls -lah ${OUTDIR}"
                 ls -lah ${OUTDIR}
-                
-                echo '-----+-----++------------+++++++++--+---'
-            done
-            echo '--++---+----+++-----++++---+++--+-++--+---'
-        fi
 
-        # Bb
-        if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-            export PNETCDF_HINTS="nc_bb_driver=enable;nc_bb_del_on_close=disable;nc_bb_overwrite=enable;nc_bb_dirname=${BBDIR}"
-            for i in ${RUNS[@]}
-            do
+                echo '-----+-----++------------+++++++++--+---'
+            fi
+
+            # Bb
+            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
+                export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_dirname=${BBDIR}"
+
                 echo "rm -f ${OUTDIR}/*"
                 rm -f ${OUTDIR}/*
                 echo "rm -f ${BBDIR}/*"
@@ -83,19 +80,17 @@ do
                 if ["${NP}" -lt 33]; then
                     echo "ls -lah ${BBDIR}"
                     ls -lah ${BBDIR}
-                fi
-                            
-                echo '-----+-----++------------+++++++++--+---'
-            done
-            unset PNETCDF_HINTS
-            echo '--++---+----+++-----++++---+++--+-++--+---'
-        fi
+                fi                     
 
-        # Bb_shared
-        if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-            export PNETCDF_HINTS="nc_bb_driver=enable;nc_bb_del_on_close=disable;nc_bb_overwrite=enable;nc_bb_sharedlog=enable;nc_bb_dirname=${BBDIR}"
-            for i in ${RUNS[@]}
-            do
+                echo '-----+-----++------------+++++++++--+---'
+
+                unset PNETCDF_HINTS
+            fi
+
+            # Bb_shared
+            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
+                export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_sharedlog=enable;nc_dw_dirname=${BBDIR}"
+
                 echo "rm -f ${OUTDIR}/*"
                 rm -f ${OUTDIR}/*
                 echo "rm -f ${BBDIR}/*"
@@ -116,18 +111,18 @@ do
                     echo "ls -lah ${BBDIR}"
                     ls -lah ${BBDIR}
                 fi
-                            
-                echo '-----+-----++------------+++++++++--+---'
-            done
-            unset PNETCDF_HINTS
-            echo '--++---+----+++-----++++---+++--+-++--+---'
-        fi
 
-        # Staging
-        export stageout_bb_path="${BBDIR}"
-        export stageout_pfs_path="${OUTDIR}"
-        for i in ${RUNS[@]}
-        do
+                echo '-----+-----++------------+++++++++--+---'
+
+                unset PNETCDF_HINTS
+            fi
+
+            # Staging
+            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
+                export stageout_bb_path="${BBDIR}"
+                export stageout_pfs_path="${OUTDIR}"
+            fi
+
             echo "rm -f ${OUTDIR}/*"
             rm -f ${OUTDIR}/*
             echo "rm -f ${BBDIR}/*"
@@ -148,11 +143,15 @@ do
             ls -lah ${BBDIR}
             
             echo '-----+-----++------------+++++++++--+---'
+            
+            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
+                unset stageout_bb_path
+                unset stageout_pfs_path
+            fi
         done
-        unset stageout_bb_path
-        unset stageout_pfs_path
-        echo '--++---+----+++-----++++---+++--+-++--+---'
     done
+
+    echo '--++---+----+++-----++++---+++--+-++--+---'
 done
 
 echo "BB Info: "
