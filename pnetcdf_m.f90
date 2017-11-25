@@ -333,7 +333,7 @@
       err = nfmpi_inq_get_size(ncid, get_size)
 
       if (doIndepIO) then
-         err = nfmpi_begin_indep_data(ncid)
+         err = nfmpi_end_indep_data(ncid)
          if (err .ne. NF_NOERR) call check(err, 'In nfmpi_begin_indep_data:')
       endif
 
