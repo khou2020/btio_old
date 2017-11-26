@@ -197,10 +197,10 @@
             double precision var(13), total_max, total_min, total_mean, total_var
             double precision time_staging
 
-            err = nfmpi_inq_dw_time( dw_time(1), dw_time(2), dw_time(3), dw_time(4), dw_time(5), dw_time(6))
-            err = nfmpi_inq_dw_time_put(dw_time(7), dw_time(8), dw_time(9))
-            err = nfmpi_inq_dw_time_flush(dw_time(10), dw_time(11), dw_time(12), dw_time(13))
-            err = nfmpi_inq_dw_size(dw_data, dw_meta, dw_buffer)
+            err = nfmpi_inq_bb_time( dw_time(1), dw_time(2), dw_time(3), dw_time(4), dw_time(5), dw_time(6))
+            err = nfmpi_inq_bb_time_put(dw_time(7), dw_time(8), dw_time(9))
+            err = nfmpi_inq_bb_time_flush(dw_time(10), dw_time(11), dw_time(12), dw_time(13))
+            err = nfmpi_inq_bb_size(dw_data, dw_meta, dw_buffer)
 
             call MPI_Reduce(btio_time, time_io_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
             call MPI_Reduce(btio_time, time_io_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
