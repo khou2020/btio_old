@@ -57,7 +57,7 @@ do
                 echo '-----+-----++------------+++++++++--+---'
             fi
 
-            # Bb
+            # Dw
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
                 export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_dirname=${BBDIR}"
 
@@ -70,7 +70,7 @@ do
                 m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
                 srun -n ${NP} ./btio
 
-                echo "#%$: io_driver: bb"     
+                echo "#%$: io_driver: dw"     
                 echo "#%$: number_of_nodes: ${NN}"
                 echo "#%$: number_of_procs: ${NP}"
                 echo "#%$: io_mode: ${u}_${v}"
@@ -87,7 +87,7 @@ do
                 unset PNETCDF_HINTS
             fi
 
-            # Bb_shared
+            # Dw shared
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
                 export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_sharedlog=enable;nc_dw_dirname=${BBDIR}"
 
@@ -100,7 +100,7 @@ do
                 m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
                 srun -n ${NP} ./btio
 
-                echo "#%$: io_driver: bb_shared"     
+                echo "#%$: io_driver: dw_shared"     
                 echo "#%$: number_of_nodes: ${NN}"
                 echo "#%$: number_of_procs: ${NP}"
                 echo "#%$: io_mode: ${u}_${v}"
@@ -119,7 +119,7 @@ do
 
             # Staging
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                export stageout_bb_path="${BBDIR}"
+                export stageout_dw_path="${BBDIR}"
                 export stageout_pfs_path="${OUTDIR}"
             fi
 
@@ -145,7 +145,7 @@ do
             echo '-----+-----++------------+++++++++--+---'
             
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                unset stageout_bb_path
+                unset stageout_dw_path
                 unset stageout_pfs_path
             fi
         done
