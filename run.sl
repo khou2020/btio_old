@@ -10,7 +10,7 @@ RUNS=(1) # Number of runs
 OUTDIR=/global/cscratch1/sd/khl7265/FS_64_8M/btio
 BBDIR=${DW_JOB_STRIPED}btio
 NN=${SLURM_NNODES}
-let NP=NN*1
+let NP=NN*4
 #let NP=NN*32 
 
 DIMX=512
@@ -119,7 +119,7 @@ do
 
             # Staging
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                export stageout_dw_path="${BBDIR}"
+                export stageout_bb_path="${BBDIR}"
                 export stageout_pfs_path="${OUTDIR}"
             fi
 
@@ -145,7 +145,7 @@ do
             echo '-----+-----++------------+++++++++--+---'
             
             if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                unset stageout_dw_path
+                unset stageout_bb_path
                 unset stageout_pfs_path
             fi
         done
