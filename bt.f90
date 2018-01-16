@@ -144,6 +144,10 @@
 2001  format('#%$: ', A, ': ', F16.2)
 2002  format('#%$: ', A, ': ', I13)
 
+
+         print 2002,' number_of_cells', ncells
+         print 2002,' number_of_iterations', niter
+
          if (io_mode .EQ. 'w') then
             print 2000,'io_operation', 'write'
          else

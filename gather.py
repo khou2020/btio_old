@@ -12,22 +12,29 @@ NN = "number_of_nodes"
 NP = "number_of_procs"
 
 xname = {NP: "Number of Processes", 
-         "dw_blocking_coll": "DW Driver Log Per Process", 
-         "dw_shared_blocking_coll": "DW Driver Shared Log", 
-         "ncmpi_blocking_coll": "Ncmpi Blocking Collective", 
-         "ncmpi_nonblocking_coll": "Ncmpi Nonblocking Collective", 
-         "ncmpi_blocking_indep": "Ncmpi Blocking Independent", 
-         "ncmpi_nonblocking_indep": "Ncmpi Nonblocking Independent", 
-         "stage_blocking_coll": "DW Stage Out Blocking Collective", 
-         "stage_blocking_indep": "DW Stage Out Blocking Independent", 
-         "stage_nonblocking_coll": "DW Stage Out Nonblocking Collective", 
-         "stage_nonblocking_indep": "DW Stage Out Nonblocking Independent", 
-         256: "256 Processes",
-         512: "512 Processes",
-         1024: "1024 Processes",
-         2048: "2048 Processes",
-         4096: "4096 Processes",
-         8192: "8192 Processes",
+         DRIVER: "IO Driver",
+         IOMODE: "IO Mode",
+         "dw_blocking_coll": "BB", 
+         "dw_private_blocking_coll": "BB-P", 
+         "dw_shared_blocking_coll": "BB-S", 
+         "ncmpi_blocking_coll": "NC-BC", 
+         "ncmpi_nonblocking_coll": "NC-NC", 
+         "ncmpi_blocking_indep": "NC-BI", 
+         "ncmpi_nonblocking_indep": "NC-NI", 
+         "stage_blocking_coll": "DW-BC", 
+         "stage_blocking_indep": "DW-BI", 
+         "stage_nonblocking_coll": "DW-NC", 
+         "stage_nonblocking_indep": "DW-NI", 
+         "blocking_coll": "BC", 
+         "blocking_indep": "BI", 
+         "nonblocking_coll": "NC", 
+         "nonblocking_indep": "NI", 
+         256: "256",
+         512: "512",
+         1024: "1024",
+         2048: "2048",
+         4096: "4096",
+         8192: "8192",
         }
 
 
@@ -51,6 +58,9 @@ def gather(dir:str):
                                 rec["total_time_max"] = rec["btio_time_max"] + stageouttime
                             else:
                                 stageouttime = rec["stage_time"]
+                                rec["total_time_mean"] = rec["btio_time_mean"] + stageouttime
+                                rec["total_time_min"] = rec["btio_time_min"] + stageouttime
+                                rec["total_time_max"] = rec["btio_time_max"] + stageouttime
                         recs.append(rec)
                         rec = {}
                     elif (line[:3] == '#%$'):
@@ -118,7 +128,7 @@ def plot_driver_np(fout, recs:list, filter:dict):
             fout.write(", ")
         fout.write("\n")
 
-    fout.write("GiB, ")
+    fout.write("Total IO Size, Size (GiB), ")
     for k in filter:
         fout.write(str(k) + ": " + str(filter[k]) + ",")
     fout.write("\n")
@@ -148,7 +158,7 @@ def plot_driver_np(fout, recs:list, filter:dict):
         for y in ys:
             k = str(x) + "/" + str(y)
             if (k in time and k in size):
-                fout.write(str(size[k] / time[k]))
+                fout.write(str(size[k] / time[k] / 1024 / 1024 / 1024))
             fout.write(", ")
         fout.write("\n")
 
@@ -197,21 +207,21 @@ def plot_stage_np_mode(fout, recs:list, filter:dict):
 
     xs = sorted(list(xs))
     x2s = sorted(list(x2s))
-    ys = ["total_time_mean", "flash_time_mean", "stage_time"]
-    xys = {"total_time_mean": "Total Time", "flash_time_mean": "Time Writting to BB", "stage_time": "Time Staging Out"}
+    ys = ["total_time_mean", "btio_time_mean", "stage_time"]
+    xys = {"total_time_mean": "Total Time", "btio_time_mean": "Time Writting to BB", "stage_time": "Time Staging Out"}
 
     fout.write("DW Stagin Time Breakdown, Time (Sec), ")
     for k in filter:
         fout.write(str(k) + ": " + str(filter[k]) + ",")
     fout.write("\n")
-    fout.write(xname[NP] + ", " + IOMODE + ", ")
+    fout.write(xname[NP] + ", " + xname[IOMODE] + ", ")
     for y in ys:
         fout.write(str(xys[y]) + ", ")
     fout.write("\n")
     for x in xs:
         fout.write(str(xname[x]))
         for x2 in x2s:
-            fout.write(", " + str(x2) + ", ")
+            fout.write(", " + str(xname[x2]) + ", ")
             k = str(x) + "_" + str(x2)
             if (k in table):
                 for y in ys:
@@ -224,14 +234,14 @@ def plot_stage_np_mode(fout, recs:list, filter:dict):
     for k in filter:
         fout.write(str(k) + ": " + str(filter[k]) + ",")
     fout.write("\n")
-    fout.write(xname[NP] +  ", " + IOMODE + ", ")
+    fout.write(xname[NP] +  ", " + xname[IOMODE] + ", ")
     for y in ys:
         fout.write(str(xys[y]) + ", ")
     fout.write("\n")
     for x in xs:
         fout.write(str(xname[x]))
         for x2 in x2s:
-            fout.write(", " + str(x2) + ", ")
+            fout.write(", " + str(xname[x2]) + ", ")
             k = str(x) + "_" + str(x2)
             if (k in table):
                 for y in ys:
@@ -271,11 +281,11 @@ def plot_dw_np(fout, recs:list, filter:dict):
            "dw_put_data_wr_time_mean": "Time Writing Data", "dw_put_meta_wr_time_mean": "Time Writing Metadata", "dw_put_num_wr_time_mean": "Time Updateing Num", 
            "dw_flush_replay_time_mean": "Time Replaying Log", "dw_flush_data_rd_time_mean": "Time Reading Data", "dw_flush_put_time_mean": "Time Calling Put", "dw_flush_wait_time_mean": "Time Waiting"}
 
-    fout.write("Sec, ")
+    fout.write("DW Driver Time Breakdown, Time (Sec), ")
     for k in filter:
         fout.write(str(k) + ": " + str(filter[k]) + ",")
     fout.write("\n")
-    fout.write(NP + ", ")
+    fout.write(xname[NP] + ", ")
     for y in ys:
         fout.write(str(xys[y]) + ", ")
     fout.write("\n")
@@ -291,9 +301,9 @@ def plot_dw_np(fout, recs:list, filter:dict):
     for k in filter:
         fout.write(str(k) + ": " + str(filter[k]) + ",")
     fout.write("\n")
-    fout.write(NP + ", ")
+    fout.write(xname[NP] + ", ")
     for y in ys:
-        fout.write(str(y) + ", ")
+        fout.write(str(xys[y]) + ", ")
     fout.write("\n")
     for x in xs:
         fout.write(str(x) + ", ")
@@ -342,8 +352,9 @@ def plot_dw_np_cmp(fout, recs:list, filter:dict):
     xys = {"dw_total_time_mean": "Time in DW Driver", "dw_create_time_mean": "Time Creating Log", "dw_enddef_time_mean": "Time Enddef", "dw_put_time_mean": "Time Writing Log", "dw_flush_time_mean": "Time Flushing Log", "dw_close_time_mean": "Time Closing Log", 
            "dw_put_data_wr_time_mean": "Time Writing Data", "dw_put_meta_wr_time_mean": "Time Writing Metadata", "dw_put_num_wr_time_mean": "Time Updateing Num", 
            "dw_flush_replay_time_mean": "Time Replaying Log", "dw_flush_data_rd_time_mean": "Time Reading Data", "dw_flush_put_time_mean": "Time Calling Put", "dw_flush_wait_time_mean": "Time Waiting"}
-    xx2s = {"dw": "Log Per Process", 
-            "dw_shared": "Shared Log", }
+    xx2s = {"dw": "BB", 
+            "dw_shared": "BB-S", 
+            "dw_private": "BB-P", }
 
     fout.write("DW Driver Time Breakdown, Time (Sec), ")
     for k in filter:
@@ -393,13 +404,15 @@ def main(argv:list):
     
     recs = gather(dir)
     
-    with open('result.csv', 'w') as fout:
+    with open('btio.csv', 'w') as fout:
         filter = {}
         plot_driver_np(fout, recs, filter)
         filter = {DRIVER: 'dw'}
         plot_dw_np(fout, recs, filter)
         filter = {DRIVER: 'dw_shared'}
         plot_dw_np(fout, recs, filter)
+        filter = {DRIVER: ['dw', 'dw_shared', 'dw_private']}
+        plot_dw_np_cmp(fout, recs, filter)
         filter = {DRIVER: 'stage'}
         plot_stage_np_mode(fout, recs, filter)
 
