@@ -11,7 +11,7 @@
 #    PNETCDF_DIR   -- PnetCDF library installation directory
 #
 
-MPIF90      = mpif90
+MPIF90      = ftn 
 FCFLAGS     = -O2
 PNETCDF_DIR = $(HOME)/local/ncmpi_eval
 
