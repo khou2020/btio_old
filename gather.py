@@ -397,7 +397,7 @@ def plot_dw_np_cmp(fout, recs:list, filter:dict):
             fout.write("\n")
 
 def main(argv:list):
-    dir = 'C:/Users/x3276/OneDrive/Research/Log io/Result/btio'
+    dir = 'C:/Users/x3276/OneDrive/Research/Log io/Result/btio/theta'
 
     if len(argv) > 1:
         dir = argv[1]
