@@ -11,9 +11,9 @@
 #    PNETCDF_DIR   -- PnetCDF library installation directory
 #
 
-MPIF90      = /home/khl7265/local/mpich_logfs/bin/mpif90 
+MPIF90      = ftn 
 FCFLAGS     = -O2
-PNETCDF_DIR = $(HOME)/local/ncmpi_logfs
+PNETCDF_DIR = $(HOME)/local/ncmpi_eval
 
 COMPILE_F90  = $(MPIF90) $(FCFLAGS) $(INC) -c
 LINK         = $(MPIF90) $(FCFLAGS)
@@ -33,7 +33,7 @@ all: $(TARGET)
 
 $(TARGET): $(OBJS)
 	$(LINK) $(OBJS) -o $(TARGET) $(LIBS)
-	$(LINK) $(OBJS) -o $(TARGET)_logfs $(LIBS) -L${HOME}/local/romio_logfsd/lib -lromio
+	$(LINK) $(OBJS) -o $(TARGET)_logfs $(LIBS) -L${HOME}/local/romio_logfs/lib -lromio
 	$(LINK) $(OBJS) -o $(TARGET)_de $(LIBS) -L${HOME}/local/dataelevator/lib -lde
 
 io_info.o:        io_info.f90 
