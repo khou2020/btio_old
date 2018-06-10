@@ -175,7 +175,7 @@
       if (info_used .NE. MPI_INFO_NULL) &
          call MPI_Info_free(info_used, err)
 
- 999  call MPI_Finalize(err)
+ 999  ierr = ncmpi_mpi_finalize())
 
       end program main
 
