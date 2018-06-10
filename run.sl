@@ -28,6 +28,8 @@ for i in ${RUNS[@]}
 do
     # Ncmpio
     
+    >&2 echo "========================== NCMPI =========================="
+
     echo "#%$: io_driver: ncmpi"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
@@ -55,6 +57,8 @@ do
     echo '-----+-----++------------+++++++++--+---'
 
     # Ncmpio NB
+
+    >&2 echo "========================== NCMPI NB =========================="
     
     echo "#%$: io_driver: ncmpi"
     echo "#%$: number_of_nodes: ${NN}"
@@ -83,6 +87,8 @@ do
     echo '-----+-----++------------+++++++++--+---'
 
     # BB LPP P
+
+    >&2 echo "========================== BB LPP P =========================="
 
     echo "#%$: io_driver: bb_lpp_private"
     echo "#%$: number_of_nodes: ${NN}"
@@ -118,6 +124,8 @@ do
 
     # BB LPP S
 
+    >&2 echo "========================== BB LPP S =========================="
+
     echo "#%$: io_driver: bb_lpn_striped"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
@@ -145,12 +153,16 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
-    echo "ls -lah ${DW_JOB_STRIPED}"
-    ls -lah ${DW_JOB_STRIPED}
+    if ["${NP}" -lt 33]; then
+        echo "ls -lah ${DW_JOB_STRIPED}"
+        ls -lah ${DW_JOB_STRIPED}
+    fi
 
     echo '-----+-----++------------+++++++++--+---'
 
     # BB LPN S
+
+    >&2 echo "========================== BB LPN S =========================="
 
     echo "#%$: io_driver: bb_lpn_striped"
     echo "#%$: number_of_nodes: ${NN}"
@@ -179,10 +191,16 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    if ["${NP}" -lt 33]; then
+        echo "ls -lah ${DW_JOB_STRIPED}"
+        ls -lah ${DW_JOB_STRIPED}
+    fi
 
     echo '-----+-----++------------+++++++++--+---'
 
     # Staging
+
+    >&2 echo "========================== Stage =========================="
 
     echo "#%$: io_driver: stage"
     echo "#%$: number_of_nodes: ${NN}"
@@ -191,15 +209,15 @@ do
 
     echo "rm -f ${OUTDIR}/*"
     rm -f ${OUTDIR}/*
-    echo "rm -f ${BBDIR}/*"
-    rm -f ${BBDIR}/*
+    echo "rm -f ${DW_JOB_STRIPED}/*"
+    rm -f ${DW_JOB_STRIPED}/*
 
-    export stageout_bb_path="${BBDIR}"
+    export stageout_bb_path="${DW_JOB_STRIPED}"
     export stageout_pfs_path="${OUTDIR}"
 
     let IO_METHOD=2
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${DW_JOB_STRIPED} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${DW_JOB_STRIPED} inputbt.m4 > inputbt.data
 
     STARTTIME=`date +%s.%N`
 
@@ -215,12 +233,14 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
-    echo "ls -lah ${BBDIR}"
-    ls -lah ${BBDIR}
+    echo "ls -lah ${DW_JOB_STRIPED}"
+    ls -lah ${DW_JOB_STRIPED}
     
     echo '-----+-----++------------+++++++++--+---'
     
     # Staging Indep
+
+    >&2 echo "========================== Stage Indep =========================="
 
     echo "#%$: io_driver: stage"
     echo "#%$: number_of_nodes: ${NN}"
@@ -236,8 +256,8 @@ do
     export stageout_pfs_path="${OUTDIR}"
 
     let IO_METHOD=4
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${DW_JOB_STRIPED} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${DW_JOB_STRIPED} inputbt.m4 > inputbt.data
 
     STARTTIME=`date +%s.%N`
 
@@ -259,6 +279,8 @@ do
     echo '-----+-----++------------+++++++++--+---'
 
     # LogFS
+
+    >&2 echo "========================== Logfs =========================="
     
     echo "#%$: io_driver: logfs"
     echo "#%$: number_of_nodes: ${NN}"
@@ -271,8 +293,8 @@ do
     export PNETCDF_HINTS="logfs_replayonclose=true;logfs_info_logbase=${DW_JOB_PRIVATE};logfs_flushblocksize=268435456"
 
     let IO_METHOD=2
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=logfs:${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=logfs:${OUTDIR} inputbt.m4 > inputbt.data
 
     STARTTIME=`date +%s.%N`
 
@@ -292,6 +314,8 @@ do
 
     # Data Elevator
 
+    >&2 echo "========================== DE =========================="
+
     echo "#%$: io_driver: de"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
@@ -301,8 +325,8 @@ do
     rm -f ${OUTDIR}/*
 
     let IO_METHOD=2
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
 
     STARTTIME=`date +%s.%N`
     
