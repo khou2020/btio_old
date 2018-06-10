@@ -2,13 +2,16 @@
 #SBATCH -p debug
 #SBATCH -N 1 
 #SBATCH -C haswell
-#SBATCH -t 00:10:00
-#SBATCH -o btio_debug.txt
-#DW jobdw capacity=1289GiB access_mode=striped type=scratch pool=sm_pool
-
+#SBATCH -t 00:20:00
+#SBATCH -o btio_1_%j.txt
+#SBATCH -e btio_1_%j.err
+#SBATCH -L SCRATCH
+#SBATCH -A m844
+#SBATCH --gres=craynetwork:2
+#DW jobdw capacity=1289GiB access_mode=striped type=scratch
+#DW jobdw capacity=1289GiB access_mode=private type=scratch
 RUNS=(1) # Number of runs
 OUTDIR=/global/cscratch1/sd/khl7265/FS_64_8M/btio
-BBDIR=${DW_JOB_STRIPED}btio
 NN=${SLURM_NNODES}
 let NP=NN*4
 #let NP=NN*32 
@@ -20,138 +23,310 @@ NITR=1 # 1 Itr = 5 GiB
 
 echo "mkdir -p ${OUTDIR}"
 mkdir -p ${OUTDIR}
-echo "mkdir -p ${BBDIR}"
-mkdir -p ${BBDIR}
 
 for i in ${RUNS[@]}
 do
-    for u in blocking nonblocking
-    do
-        for v in coll indep
-        do
-            let IO_METHOD=2
-            if [ "x${u}" = "xnonblocking" ]; then
-                let IO_METHOD=IO_METHOD+1
-            fi
-            if [ "x${v}" = "xindep" ]; then
-                let IO_METHOD=IO_METHOD+2
-            fi
-            
-            # Ncmpi
-            if [ "x${v}" = "xcoll" ]; then
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
+    # Ncmpio
+    
+    echo "#%$: io_driver: ncmpi"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
 
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                srun -n ${NP} ./btio
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+    
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
 
-                echo "#%$: io_driver: ncmpi"
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
+    STARTTIME=`date +%s.%N`
 
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
+    srun -n ${NP} ./btio
 
-                echo '-----+-----++------------+++++++++--+---'
-            fi
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
 
-            # Dw
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_dirname=${BBDIR}"
+    echo "#%$: exe_time: $TIMEDIFF"
 
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
-                echo "rm -f ${BBDIR}/*"
-                rm -f ${BBDIR}/*
-                
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                srun -n ${NP} ./btio
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    
+    echo '-----+-----++------------+++++++++--+---'
 
-                echo "#%$: io_driver: dw"     
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
-                
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
-                if ["${NP}" -lt 33]; then
-                    echo "ls -lah ${BBDIR}"
-                    ls -lah ${BBDIR}
-                fi                     
+    # Ncmpio NB
+    
+    echo "#%$: io_driver: ncmpi"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: nonblocking_coll"
 
-                echo '-----+-----++------------+++++++++--+---'
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+    
+    let IO_METHOD=3
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
 
-                unset PNETCDF_HINTS
-            fi
+    STARTTIME=`date +%s.%N`
 
-            # Dw shared
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                export PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_sharedlog=enable;nc_dw_dirname=${BBDIR}"
+    srun -n ${NP} ./btio
 
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
-                echo "rm -f ${BBDIR}/*"
-                rm -f ${BBDIR}/*
-                
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                srun -n ${NP} ./btio
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
 
-                echo "#%$: io_driver: dw_shared"     
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
-                
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
-                if ["${NP}" -lt 33]; then
-                    echo "ls -lah ${BBDIR}"
-                    ls -lah ${BBDIR}
-                fi
+    echo "#%$: exe_time: $TIMEDIFF"
 
-                echo '-----+-----++------------+++++++++--+---'
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    
+    echo '-----+-----++------------+++++++++--+---'
 
-                unset PNETCDF_HINTS
-            fi
+    # BB LPP P
 
-            # Staging
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                export stageout_bb_path="${BBDIR}"
-                export stageout_pfs_path="${OUTDIR}"
-            fi
+    echo "#%$: io_driver: bb_lpp_private"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
 
-            echo "rm -f ${OUTDIR}/*"
-            rm -f ${OUTDIR}/*
-            echo "rm -f ${BBDIR}/*"
-            rm -f ${BBDIR}/*
-            
-            echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
-            srun -n ${NP} ./btio
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
 
-            echo "#%$: io_driver: stage"
-            echo "#%$: number_of_nodes: ${NN}"
-            echo "#%$: number_of_procs: ${NP}"
-            echo "#%$: io_mode: ${u}_${v}"
+    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${DW_JOB_PRIVATE}"
 
-            echo "ls -lah ${OUTDIR}"
-            ls -lah ${OUTDIR}
-            echo "ls -lah ${BBDIR}"
-            ls -lah ${BBDIR}
-            
-            echo '-----+-----++------------+++++++++--+---'
-            
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                unset stageout_bb_path
-                unset stageout_pfs_path
-            fi
-        done
-    done
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
 
-    echo '--++---+----+++-----++++---+++--+-++--+---'
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio
+    
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+    
+    unset PNETCDF_HINTS
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    echo "ls -lah ${DW_JOB_PRIVATE}"
+    ls -lah ${DW_JOB_PRIVATE}
+
+    echo '-----+-----++------------+++++++++--+---'
+
+    # BB LPP S
+
+    echo "#%$: io_driver: bb_lpn_striped"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+
+    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    unset PNETCDF_HINTS
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    echo "ls -lah ${DW_JOB_STRIPED}"
+    ls -lah ${DW_JOB_STRIPED}
+
+    echo '-----+-----++------------+++++++++--+---'
+
+    # BB LPN S
+
+    echo "#%$: io_driver: bb_lpn_striped"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+
+    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_sharedlog=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    unset PNETCDF_HINTS
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+
+    echo '-----+-----++------------+++++++++--+---'
+
+    # Staging
+
+    echo "#%$: io_driver: stage"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_procs: ${NP}"
+    echo "#%$: io_mode: ${u}_${v}"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+    echo "rm -f ${BBDIR}/*"
+    rm -f ${BBDIR}/*
+
+    export stageout_bb_path="${BBDIR}"
+    export stageout_pfs_path="${OUTDIR}"
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    unset stageout_bb_path
+    unset stageout_pfs_path
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    echo "ls -lah ${BBDIR}"
+    ls -lah ${BBDIR}
+    
+    echo '-----+-----++------------+++++++++--+---'
+    
+    # Staging Indep
+
+    echo "#%$: io_driver: stage"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_indep"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+    echo "rm -f ${DW_JOB_STRIPED}/*"
+    rm -f ${DW_JOB_STRIPED}/*
+
+    export stageout_bb_path="${DW_JOB_STRIPED}"
+    export stageout_pfs_path="${OUTDIR}"
+
+    let IO_METHOD=4
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    unset stageout_bb_path
+    unset stageout_pfs_path
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    echo "ls -lah ${DW_JOB_STRIPED}"
+    ls -lah ${DW_JOB_STRIPED}
+
+    echo '-----+-----++------------+++++++++--+---'
+
+    # LogFS
+    
+    echo "#%$: io_driver: logfs"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+    
+    export PNETCDF_HINTS="logfs_replayonclose=true;logfs_info_logbase=${DW_JOB_PRIVATE};logfs_flushblocksize=268435456"
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    srun -n ${NP} ./btio_logfs
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    unset PNETCDF_HINTS
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    
+    echo '-----+-----++------------+++++++++--+---'
+
+    # Data Elevator
+
+    echo "#%$: io_driver: de"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
+    
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${BBDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+    
+    srun -n ${NP} --mem=60000 --gres=craynetwork:1 ./btio_de &
+    srun -n ${NP} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a -r dejob_${NP}_${i}.log &
+    wait
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    
+    echo '-----+-----++------------+++++++++--+---'
+
+    #let IO_METHOD=2
+    #if [ "x${u}" = "xnonblocking" ]; then
+    #    let IO_METHOD=IO_METHOD+1
+    #fi
+    #if [ "x${v}" = "xindep" ]; then
+    #    let IO_METHOD=IO_METHOD+2
+    #fi
 done
 
 echo "BB Info: "
