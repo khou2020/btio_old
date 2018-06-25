@@ -8,17 +8,17 @@
 #SBATCH -L SCRATCH
 #SBATCH -A m844
 #SBATCH --gres=craynetwork:2
-#DW jobdw capacity=1289GiB access_mode=striped type=scratch
-#DW jobdw capacity=1289GiB access_mode=private type=scratch
+#DW jobdw capacity=640GiB access_mode=striped type=scratch
+#DW jobdw capacity=640GiB access_mode=private type=scratch
 RUNS=(1) # Number of runs
 OUTDIR=/global/cscratch1/sd/khl7265/FS_64_8M/btio
 NN=${SLURM_NNODES}
 let NP=NN*4
 #let NP=NN*32 
 
-DIMX=512
-DIMY=512
-DIMZ=512
+DIMX=32
+DIMY=32
+DIMZ=32
 NITR=1 # 1 Itr = 5 GiB
 
 echo "mkdir -p ${OUTDIR}"
@@ -130,13 +130,15 @@ do
     echo "========================== BB LPP S =========================="
     >&2 echo "========================== BB LPP S =========================="
 
-    echo "#%$: io_driver: bb_lpn_striped"
+    echo "#%$: io_driver: bb_lpp_striped"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_coll"
 
     echo "rm -f ${OUTDIR}/*"
     rm -f ${OUTDIR}/*
+    echo "rm -f ${DW_JOB_STRIPED}/*"
+    rm -f ${DW_JOB_STRIPED}/*
 
     export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
 
@@ -176,8 +178,10 @@ do
 
     echo "rm -f ${OUTDIR}/*"
     rm -f ${OUTDIR}/*
+    echo "rm -f ${DW_JOB_STRIPED}/*"
+    rm -f ${DW_JOB_STRIPED}/*
 
-    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_sharedlog=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
+    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_shared_logs=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
 
     let IO_METHOD=2
     echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
@@ -332,6 +336,8 @@ do
     
     echo "rm -f ${OUTDIR}/*"
     rm -f ${OUTDIR}/*
+    echo "rm -f ${DW_JOB_STRIPED}/*"
+    rm -f ${DW_JOB_STRIPED}/*
 
     let IO_METHOD=2
     echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"

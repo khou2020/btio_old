@@ -1,5 +1,5 @@
 w                  # IO mode: w for write, r for read
 2                  # IO method: 0 for MPI collective IO, 1 for MPI independent IO, 2 for PnetCDF blocking I/O, 3 for PnetCDF nonblocking I/O
-15                 # number of global arrays
-64 64 64        # grid_points(1), grid_points(2), grid_points(3)
-logfs:.
+1                 # number of global arrays
+512 512 512        # grid_points(1), grid_points(2), grid_points(3)
+/global/cscratch1/sd/khl7265/FS_64_8M/btio
