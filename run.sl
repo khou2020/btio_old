@@ -346,7 +346,7 @@ do
     STARTTIME=`date +%s.%N`
     
     srun -n ${NP} --mem=60000 --gres=craynetwork:1 ./btio_de &
-    srun -n ${NP} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a -r dejob_${NP}_${i}.log &
+    srun -n ${NP} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
     wait
 
     ENDTIME=`date +%s.%N`
