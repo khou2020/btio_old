@@ -252,10 +252,10 @@ do
     
     # Staging Indep
 
-    echo "========================== Stage Indep =========================="
-    >&2 echo "========================== Stage Indep =========================="
+    echo "========================== On BB Indep =========================="
+    >&2 echo "========================== On BB Indep =========================="
 
-    echo "#%$: io_driver: stage"
+    echo "#%$: io_driver: on_bb"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_indep"
@@ -265,8 +265,8 @@ do
     echo "rm -f ${DW_JOB_STRIPED}/*"
     rm -f ${DW_JOB_STRIPED}/*
 
-    export stageout_bb_path="${DW_JOB_STRIPED}"
-    export stageout_pfs_path="${OUTDIR}"
+    #export stageout_bb_path="${DW_JOB_STRIPED}"
+    #export stageout_pfs_path="${OUTDIR}"
 
     let IO_METHOD=4
     echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${DW_JOB_STRIPED} inputbt.m4 > inputbt.data"
@@ -279,8 +279,8 @@ do
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
 
-    unset stageout_bb_path
-    unset stageout_pfs_path
+    #unset stageout_bb_path
+    #unset stageout_pfs_path
 
     echo "#%$: exe_time: $TIMEDIFF"
 
