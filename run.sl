@@ -21,15 +21,28 @@ DIMY=32
 DIMZ=32
 NITR=1 # 1 Itr = 5 GiB
 
+# Make sure BB stripe count is correct
+srun -n 1 /global/homes/k/khl7265/sc ${DW_JOB_STRIPED}/test.bin 64
+ret="$(sacct -o exitcode -n -j ${SLURM_JOB_ID}.0)"
+# remove leading whitespace characters
+ret="${ret#"${ret%%[![:space:]]*}"}"
+# remove trailing whitespace characters
+ret="${ret%"${ret##*[![:space:]]}"}"
+if [[ "x${ret}" != "x0:0" ]]; then
+    echo "BB stripe count mismatch, quit"
+    exit 0
+fi
+
 echo "mkdir -p ${OUTDIR}"
 mkdir -p ${OUTDIR}
+echo "rm -rf ${DW_JOB_STRIPED}"
+rm -rf ${DW_JOB_STRIPED}
 
 TSTARTTIME=`date +%s.%N`
 
 for i in ${RUNS[@]}
 do
-    # Ncmpio
-    
+    # Ncmpio    
     echo "========================== NCMPI =========================="
     >&2 echo "========================== NCMPI =========================="
 

@@ -191,20 +191,20 @@
             ! local variables
             integer ierr
             integer(kind=MPI_OFFSET_KIND) malloc_size, sum_size
-            integer(kind=MPI_OFFSET_KIND) dw_data, dw_meta, dw_buffer
-            integer(kind=MPI_OFFSET_KIND) dw_meta_all, dw_data_all, dw_buffer_all
+            integer(kind=MPI_OFFSET_KIND) bb_data, bb_meta, bb_buffer
+            integer(kind=MPI_OFFSET_KIND) bb_meta_all, bb_data_all, bb_buffer_all
             double precision time_io_max, time_io_min, time_io_mean, time_io_var
             double precision time_init_max, time_init_min, time_init_mean, time_init_var
             double precision time_rw_max, time_rw_min, time_rw_mean, time_rw_var
             double precision time_close_max, time_close_min, time_close_mean, time_close_var
-            double precision dw_time(13), dw_time_max(13), dw_time_min(13), dw_time_mean(13), dw_time_var(13)
+            double precision bb_time(13), bb_time_max(13), bb_time_min(13), bb_time_mean(13), bb_time_var(13)
             double precision var(13), total_max, total_min, total_mean, total_var
             double precision time_staging
 
-            err = nfmpi_inq_bb_time( dw_time(1), dw_time(2), dw_time(3), dw_time(4), dw_time(5), dw_time(6))
-            err = nfmpi_inq_bb_time_put(dw_time(7), dw_time(8), dw_time(9))
-            err = nfmpi_inq_bb_time_flush(dw_time(10), dw_time(11), dw_time(12), dw_time(13))
-            err = nfmpi_inq_bb_size(dw_data, dw_meta, dw_buffer)
+            err = nfmpi_inq_bb_time( bb_time(1), bb_time(2), bb_time(3), bb_time(4), bb_time(5), bb_time(6))
+            err = nfmpi_inq_bb_time_put(bb_time(7), bb_time(8), bb_time(9))
+            err = nfmpi_inq_bb_time_flush(bb_time(10), bb_time(11), bb_time(12), bb_time(13))
+            err = nfmpi_inq_bb_size(bb_data, bb_meta, bb_buffer)
 
             call MPI_Reduce(btio_time, time_io_max, 1, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
             call MPI_Reduce(btio_time, time_io_min, 1, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
@@ -238,21 +238,21 @@
             call MPI_Reduce(var(1), time_close_var, 1, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
             time_close_var = time_close_var / NumPEs
 
-            call MPI_Reduce(dw_time, dw_time_max, 13, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
-            call MPI_Reduce(dw_time, dw_time_min, 13, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
-            call MPI_Allreduce(dw_time, dw_time_mean, 13, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_time, bb_time_max, 13, MPI_DOUBLE_PRECISION, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_time, bb_time_min, 13, MPI_DOUBLE_PRECISION, MPI_min, root, MPI_COMM_WORLD, ierr)
+            call MPI_Allreduce(bb_time, bb_time_mean, 13, MPI_DOUBLE_PRECISION, MPI_sum, MPI_COMM_WORLD, ierr)
             do 180 i = 1, 13
-                  dw_time_mean(i) = dw_time_mean(i) / NumPEs
-                  var(i) = (dw_time(i) - dw_time_mean(i)) * (dw_time(i) - dw_time_mean(i))
+                  bb_time_mean(i) = bb_time_mean(i) / NumPEs
+                  var(i) = (bb_time(i) - bb_time_mean(i)) * (bb_time(i) - bb_time_mean(i))
 180         continue
-            call MPI_Reduce(var, dw_time_var, 13, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(var, bb_time_var, 13, MPI_DOUBLE_PRECISION, MPI_sum, root, MPI_COMM_WORLD, ierr)
             do 190 i = 1, 13
-                  dw_time_var(i) = dw_time_var(i) / NumPEs
+                  bb_time_var(i) = bb_time_var(i) / NumPEs
 190         continue
 
-            call MPI_Reduce(dw_meta, dw_meta_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
-            call MPI_Reduce(dw_data, dw_data_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
-            call MPI_Reduce(dw_buffer, dw_buffer_all, 1, MPI_OFFSET, MPI_max, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_meta, bb_meta_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_data, bb_data_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
+            call MPI_Reduce(bb_buffer, bb_buffer_all, 1, MPI_OFFSET, MPI_max, root, MPI_COMM_WORLD, ierr)
 
             if (rank .EQ. root) then
             
@@ -305,64 +305,64 @@
 
                   print 1008,' stage_time       ', time_staging
 
-                  print 1008,' dw_total_time_max       ', dw_time_max(1)
-                  print 1008,' dw_create_time_max       ', dw_time_max(2)
-                  print 1008,' dw_enddef_time_max       ', dw_time_max(3)
-                  print 1008,' dw_put_time_max       ', dw_time_max(4)
-                  print 1008,' dw_flush_time_max       ', dw_time_max(5)
-                  print 1008,' dw_close_time_max       ', dw_time_max(6)
-                  print 1008,' dw_put_data_wr_time_max       ', dw_time_max(7)
-                  print 1008,' dw_put_meta_wr_time_max       ', dw_time_max(8)
-                  print 1008,' dw_put_num_wr_time_max       ', dw_time_max(9)
-                  print 1008,' dw_flush_replay_time_max       ', dw_time_max(10)
-                  print 1008,' dw_flush_data_rd_time_max       ', dw_time_max(11)
-                  print 1008,' dw_flush_put_time_max       ', dw_time_max(12)
-                  print 1008,' dw_flush_wait_time_max       ', dw_time_max(13)
+                  print 1008,' bb_total_time_max       ', bb_time_max(1)
+                  print 1008,' bb_create_time_max       ', bb_time_max(2)
+                  print 1008,' bb_enddef_time_max       ', bb_time_max(3)
+                  print 1008,' bb_put_time_max       ', bb_time_max(4)
+                  print 1008,' bb_flush_time_max       ', bb_time_max(5)
+                  print 1008,' bb_close_time_max       ', bb_time_max(6)
+                  print 1008,' bb_put_data_wr_time_max       ', bb_time_max(7)
+                  print 1008,' bb_put_meta_wr_time_max       ', bb_time_max(8)
+                  print 1008,' bb_put_num_wr_time_max       ', bb_time_max(9)
+                  print 1008,' bb_flush_replay_time_max       ', bb_time_max(10)
+                  print 1008,' bb_flush_data_rd_time_max       ', bb_time_max(11)
+                  print 1008,' bb_flush_put_time_max       ', bb_time_max(12)
+                  print 1008,' bb_flush_wait_time_max       ', bb_time_max(13)
 
-                  print 1008,' dw_total_time_min       ', dw_time_min(1)
-                  print 1008,' dw_create_time_min       ', dw_time_min(2)
-                  print 1008,' dw_enddef_time_min       ', dw_time_min(3)
-                  print 1008,' dw_put_time_min       ', dw_time_min(4)
-                  print 1008,' dw_flush_time_min       ', dw_time_min(5)
-                  print 1008,' dw_close_time_min       ', dw_time_min(6)
-                  print 1008,' dw_put_data_wr_time_min       ', dw_time_min(7)
-                  print 1008,' dw_put_meta_wr_time_min       ', dw_time_min(8)
-                  print 1008,' dw_put_num_wr_time_min       ', dw_time_min(9)
-                  print 1008,' dw_flush_replay_time_min       ', dw_time_min(10)
-                  print 1008,' dw_flush_data_rd_time_min       ', dw_time_min(11)
-                  print 1008,' dw_flush_put_time_min       ', dw_time_min(12)
-                  print 1008,' dw_flush_wait_time_min       ', dw_time_min(13)
+                  print 1008,' bb_total_time_min       ', bb_time_min(1)
+                  print 1008,' bb_create_time_min       ', bb_time_min(2)
+                  print 1008,' bb_enddef_time_min       ', bb_time_min(3)
+                  print 1008,' bb_put_time_min       ', bb_time_min(4)
+                  print 1008,' bb_flush_time_min       ', bb_time_min(5)
+                  print 1008,' bb_close_time_min       ', bb_time_min(6)
+                  print 1008,' bb_put_data_wr_time_min       ', bb_time_min(7)
+                  print 1008,' bb_put_meta_wr_time_min       ', bb_time_min(8)
+                  print 1008,' bb_put_num_wr_time_min       ', bb_time_min(9)
+                  print 1008,' bb_flush_replay_time_min       ', bb_time_min(10)
+                  print 1008,' bb_flush_data_rd_time_min       ', bb_time_min(11)
+                  print 1008,' bb_flush_put_time_min       ', bb_time_min(12)
+                  print 1008,' bb_flush_wait_time_min       ', bb_time_min(13)
 
-                  print 1008,' dw_total_time_mean       ', dw_time_mean(1)
-                  print 1008,' dw_create_time_mean       ', dw_time_mean(2)
-                  print 1008,' dw_enddef_time_mean       ', dw_time_mean(3)
-                  print 1008,' dw_put_time_mean       ', dw_time_mean(4)
-                  print 1008,' dw_flush_time_mean       ', dw_time_mean(5)
-                  print 1008,' dw_close_time_mean       ', dw_time_mean(6)
-                  print 1008,' dw_put_data_wr_time_mean       ', dw_time_mean(7)
-                  print 1008,' dw_put_meta_wr_time_mean       ', dw_time_mean(8)
-                  print 1008,' dw_put_num_wr_time_mean       ', dw_time_mean(9)
-                  print 1008,' dw_flush_replay_time_mean       ', dw_time_mean(10)
-                  print 1008,' dw_flush_data_rd_time_mean       ', dw_time_mean(11)
-                  print 1008,' dw_flush_put_time_mean       ', dw_time_mean(12)
-                  print 1008,' dw_flush_wait_time_mean       ', dw_time_mean(13)
+                  print 1008,' bb_total_time_mean       ', bb_time_mean(1)
+                  print 1008,' bb_create_time_mean       ', bb_time_mean(2)
+                  print 1008,' bb_enddef_time_mean       ', bb_time_mean(3)
+                  print 1008,' bb_put_time_mean       ', bb_time_mean(4)
+                  print 1008,' bb_flush_time_mean       ', bb_time_mean(5)
+                  print 1008,' bb_close_time_mean       ', bb_time_mean(6)
+                  print 1008,' bb_put_data_wr_time_mean       ', bb_time_mean(7)
+                  print 1008,' bb_put_meta_wr_time_mean       ', bb_time_mean(8)
+                  print 1008,' bb_put_num_wr_time_mean       ', bb_time_mean(9)
+                  print 1008,' bb_flush_replay_time_mean       ', bb_time_mean(10)
+                  print 1008,' bb_flush_data_rd_time_mean       ', bb_time_mean(11)
+                  print 1008,' bb_flush_put_time_mean       ', bb_time_mean(12)
+                  print 1008,' bb_flush_wait_time_mean       ', bb_time_mean(13)
 
-                  print 1011,' dw_total_time_var       ', dw_time_var(1)
-                  print 1011,' dw_create_time_var       ', dw_time_var(2)
-                  print 1011,' dw_enddef_time_var       ', dw_time_var(3)
-                  print 1011,' dw_put_time_var       ', dw_time_var(4)
-                  print 1011,' dw_flush_time_var       ', dw_time_var(5)
-                  print 1011,' dw_close_time_var       ', dw_time_var(6)
-                  print 1011,' dw_put_data_wr_time_var       ', dw_time_var(7)
-                  print 1011,' dw_put_meta_wr_time_var       ', dw_time_var(8)
-                  print 1011,' dw_put_num_wr_time_var       ', dw_time_var(9)
-                  print 1011,' dw_flush_replay_time_var       ', dw_time_var(10)
-                  print 1011,' dw_flush_data_rd_time_var       ', dw_time_var(11)
-                  print 1011,' dw_flush_put_time_var       ', dw_time_var(12)
-                  print 1011,' dw_flush_wait_time_var       ', dw_time_var(13)
+                  print 1011,' bb_total_time_var       ', bb_time_var(1)
+                  print 1011,' bb_create_time_var       ', bb_time_var(2)
+                  print 1011,' bb_enddef_time_var       ', bb_time_var(3)
+                  print 1011,' bb_put_time_var       ', bb_time_var(4)
+                  print 1011,' bb_flush_time_var       ', bb_time_var(5)
+                  print 1011,' bb_close_time_var       ', bb_time_var(6)
+                  print 1011,' bb_put_data_wr_time_var       ', bb_time_var(7)
+                  print 1011,' bb_put_meta_wr_time_var       ', bb_time_var(8)
+                  print 1011,' bb_put_num_wr_time_var       ', bb_time_var(9)
+                  print 1011,' bb_flush_replay_time_var       ', bb_time_var(10)
+                  print 1011,' bb_flush_data_rd_time_var       ', bb_time_var(11)
+                  print 1011,' bb_flush_put_time_var       ', bb_time_var(12)
+                  print 1011,' bb_flush_wait_time_var       ', bb_time_var(13)
 
-                  print 1009,' dw_metadata_size       ', dw_meta_all
-                  print 1009,' dw_data_size       ', dw_data_all
-                  print 1009,' dw_flush_buffer_size       ', dw_buffer_all
+                  print 1009,' bb_metadata_size       ', bb_meta_all
+                  print 1009,' bb_data_size       ', bb_data_all
+                  print 1009,' bb_flush_buffer_size       ', bb_buffer_all
             endif
       end subroutine report_io_performance
