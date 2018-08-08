@@ -60,7 +60,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -91,7 +91,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -122,7 +122,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -155,7 +155,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -194,7 +194,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -235,7 +235,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -274,7 +274,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -313,7 +313,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -354,7 +354,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -396,7 +396,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -437,7 +437,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio
+    srun -n ${NP} -t 3 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -475,7 +475,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} ./btio_logfs
+    srun -n ${NP} -t 3 ./btio_logfs
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -510,8 +510,8 @@ do
 
     STARTTIME=`date +%s.%N`
     
-    srun -n ${NP} --mem=60000 --gres=craynetwork:1 ./btio_de &
-    srun -n ${NP} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
+    srun -n ${NP} -t 3 --mem=60000 --gres=craynetwork:1 ./btio_de &
+    srun -n ${NP} -t 3 --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
     wait
 
     ENDTIME=`date +%s.%N`
