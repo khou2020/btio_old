@@ -51,7 +51,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -82,7 +82,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -113,7 +113,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -144,7 +144,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -175,7 +175,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -206,7 +206,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -237,7 +237,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -255,98 +255,3 @@ TIMEDIFF=`echo "$ENDTIME - $TSTARTTIME" | bc | awk -F"." '{print $1"."$2}'`
 echo "-------------------------------------------------------------"
 echo "total_exe_time: $TIMEDIFF"
 echo "-------------------------------------------------------------"
-
-
-
-echo "mkdir -p ${OUTDIR}"
-mkdir -p ${OUTDIR}
-
-for i in ${RUNS[@]}
-do
-    for u in blocking nonblocking
-    do
-        for v in coll indep
-        do
-            COLL=
-            NB=
-            if [ "x${v}" = "xcoll" ]; then
-                COLL=-c
-            fi
-            if [ "x${u}" = "xnonblocking" ]; then
-                NB=-y
-            fi
-
-            # Ncmpi
-            if [ "x${v}" = "xcoll" ]; then
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
-
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                aprun -n ${NP} -N ${PPN} ./btio
-
-                echo "#%$: io_driver: ncmpi"
-                echo "#%$: platform: theta"
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
-
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
-                
-                echo '-----+-----++------------+++++++++--+---'
-            fi
-
-            # Dw
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
-
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_dirname=${BBDIR}" ./btio
-
-                echo "#%$: io_driver: dw"     
-                echo "#%$: platform: theta"
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
-                
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
-                if ["${NP}" -lt 33]; then
-                    echo "ls -lah ${BBDIR}"
-                    ls -lah ${BBDIR}
-                fi
-
-                echo '-----+-----++------------+++++++++--+---'
-            fi
-
-            # Dw shared
-            if [ "x${u}" = "xblocking" ] && [ "x${v}" = "xcoll" ]; then
-                echo "rm -f ${OUTDIR}/*"
-                rm -f ${OUTDIR}/*
-
-                echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-                m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-                aprun -n ${NP} -N ${PPN} -e PNETCDF_HINTS="nc_dw_driver=enable;nc_dw_del_on_close=disable;nc_dw_overwrite=enable;nc_dw_sharedlog=enable;nc_dw_dirname=${BBDIR}" ./btio
-
-                echo "#%$: io_driver: dw_shared"     
-                echo "#%$: platform: theta"
-                echo "#%$: number_of_nodes: ${NN}"
-                echo "#%$: number_of_procs: ${NP}"
-                echo "#%$: io_mode: ${u}_${v}"
-                
-                echo "ls -lah ${OUTDIR}"
-                ls -lah ${OUTDIR}
-                if ["${NP}" -lt 33]; then
-                    echo "ls -lah ${BBDIR}"
-                    ls -lah ${BBDIR}
-                fi
-                            
-                echo '-----+-----++------------+++++++++--+---'
-            fi
-        done
-    done
-    echo '--++---+----+++-----++++---+++--+-++--+---'
-done
