@@ -15,7 +15,7 @@
       integer(KIND=MPI_OFFSET_KIND) global_five_dbl, num_dumps
       integer(KIND=MPI_OFFSET_KIND) put_size, get_size
       integer, allocatable :: buftypes(:), reqs(:), sts(:)
-      logical doNonBlockingIO, doIndepIO
+      logical doNonBlockingIO, doIndepIO, delayflush
 
       private :: check
 
@@ -83,6 +83,13 @@
       integer omode, info, err
 
       pnetcdf_setup = 1
+      
+      if (io_method .GE. 10) then
+          io_method = io_method - 10
+          delayflush = .TRUE.
+      else 
+          delayflush = .FALSE.
+      endif
 
       if ((io_method .EQ. 2) .OR. (io_method .EQ. 4)) doNonBlockingIO = .FALSE.
       if ((io_method .EQ. 3) .OR. (io_method .EQ. 5)) doNonBlockingIO = .TRUE.
@@ -243,8 +250,13 @@
          counts(5) = 1
 
          if (doNonBlockingIO) then
-             err = nfmpi_iput_vara(ncid, varid, starts, counts, &
+             if (delayflush) then
+                err = nfmpi_iput_vara(ncid, varid, starts, counts, &
+                            u(:,:,:,:,c), nReqs, buftypes(c), %val(0))
+             else
+                err = nfmpi_iput_vara(ncid, varid, starts, counts, &
                             u(:,:,:,:,c), nReqs, buftypes(c), reqs(c))
+             endif
              if (err .ne. NF_NOERR) call check(err, 'In nfmpi_iput_vara:')
          else
              if (doIndepIO) then
@@ -258,15 +270,19 @@
              endif
          endif
       enddo
-
-      if (doNonBlockingIO) then
-          if (doIndepIO) then
-             err = nfmpi_wait(ncid, ncells, reqs, sts)
-             if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait:')
-          else
-             err = nfmpi_wait_all(ncid, ncells, reqs, sts)
-             if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
-          endif
+      if (.NOT. delayflush) then
+        if (doNonBlockingIO) then
+            if (doIndepIO) then
+                err = nfmpi_wait(ncid, ncells, reqs, sts)
+                if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait:')
+            else
+                err = nfmpi_wait_all(ncid, ncells, reqs, sts)
+                if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
+            endif
+        else 
+            err = nfmpi_flush(ncid)
+            if (err .ne. NF_NOERR) call check(err, 'In nfmpi_flush:')
+        endif
       endif
 
       do c = 1, ncells
@@ -335,6 +351,18 @@
       if (doIndepIO) then
          err = nfmpi_end_indep_data(ncid)
          if (err .ne. NF_NOERR) call check(err, 'In nfmpi_begin_indep_data:')
+      endif
+
+    if (delayflush) then
+        if (doNonBlockingIO) then
+            if (doIndepIO) then
+                err = nfmpi_wait(ncid, NF_REQ_ALL, reqs, sts)
+                if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait:')
+            else
+                err = nfmpi_wait_all(ncid, NF_REQ_ALL, reqs, sts)
+                if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
+            endif
+        endif
       endif
 
       err = nfmpi_close(ncid)
