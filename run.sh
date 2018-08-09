@@ -14,7 +14,7 @@ export n_openmp_threads_per_rank=1
 export n_hyperthreads_per_core=1
 
 RUNS=(1) # Number of runs
-OUTDIR=/projects/radix-io/khou/FS_64_8M/btio
+OUTDIR=/projects/radix-io/khou/FS_56_8M/btio
 BBDIR=/local/scratch
 PPN=4
 #PPN=64
