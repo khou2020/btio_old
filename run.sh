@@ -2,10 +2,10 @@
 #COBALT -t 5
 #COBALT -n 1
 #COBALT --attrs mcdram=cache:numa=quad:ssds=required:ssd_size=16
-#COBALT -A ecp-testbed-01
+#COBALT -A ATPESC
 #COBALT -q debug-flat-quad
-#COBALT -o btio_1.txt
-#COBALT -e btio_1.txt
+#COBALT -o btio_1_1.txt
+#COBALT -e btio_1_1.txt
 
 export n_nodes=$COBALT_JOBSIZE
 export n_mpi_ranks_per_node=${PPN}
@@ -20,6 +20,8 @@ PPN=4
 #PPN=64
 NN=${COBALT_JOBSIZE}
 let NP=NN*PPN
+TL=300
+TLALL=600
 
 DIMX=32
 DIMY=32
@@ -51,7 +53,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -82,7 +84,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TLALL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -113,7 +115,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL}  ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -144,7 +146,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN}  -t ${TLALL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -175,7 +177,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN}  -t ${TLALL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -206,7 +208,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -237,7 +239,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t 300 -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN}  -t ${TL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -247,6 +249,37 @@ do
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
 
+    echo '-----+-----++------------+++++++++--+---'
+
+    # LogFS
+
+    echo "========================== Logfs =========================="
+    >&2 echo "========================== Logfs =========================="
+    
+    echo "#%$: io_driver: logfs"
+    echo "#%$: number_of_nodes: ${NN}"
+    echo "#%$: number_of_proc: ${NP}"
+    echo "#%$: io_mode: blocking_coll"
+
+    echo "rm -f ${OUTDIR}/*"
+    rm -f ${OUTDIR}/*
+
+    let IO_METHOD=2
+    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=logfs:${OUTDIR} inputbt.m4 > inputbt.data"
+    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=logfs:${OUTDIR} inputbt.m4 > inputbt.data
+
+    STARTTIME=`date +%s.%N`
+
+    aprun -n ${NP} -N ${PPN} -t ${TLALL} -e PNETCDF_HINTS="logfs_replayonclose=true;logfs_info_logbase=${BBDIR}/;logfs_flushblocksize=268435456" ./btio_logfs
+
+    ENDTIME=`date +%s.%N`
+    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
+
+    echo "#%$: exe_time: $TIMEDIFF"
+
+    echo "ls -lah ${OUTDIR}"
+    ls -lah ${OUTDIR}
+    
     echo '-----+-----++------------+++++++++--+---'
 done
 
