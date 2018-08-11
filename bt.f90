@@ -190,7 +190,7 @@
 
             ! local variables
             integer ierr
-            integer(kind=MPI_OFFSET_KIND) malloc_size, sum_size
+            integer(kind=MPI_OFFSET_KIND) malloc_size, sum_size, sum_size_max
             integer(kind=MPI_OFFSET_KIND) bb_data, bb_meta, bb_buffer
             integer(kind=MPI_OFFSET_KIND) bb_meta_all, bb_data_all, bb_buffer_all
             double precision time_io_max, time_io_min, time_io_mean, time_io_var
@@ -254,10 +254,21 @@
             call MPI_Reduce(bb_data, bb_data_all, 1, MPI_OFFSET, MPI_SUM, root, MPI_COMM_WORLD, ierr)
             call MPI_Reduce(bb_buffer, bb_buffer_all, 1, MPI_OFFSET, MPI_max, root, MPI_COMM_WORLD, ierr)
 
+
+            ! print info about PnetCDF internal malloc usage
+            ierr = nfmpi_inq_malloc_max_size(malloc_size)
+            if (ierr .EQ. NF_NOERR) then
+                  call MPI_Reduce(malloc_size, sum_size_max, 1, MPI_OFFSET, MPI_SUM, &
+                                    MaxPE, MPI_COMM_WORLD, ierr)   
+                  ierr = nfmpi_inq_malloc_size(malloc_size)
+                  call MPI_Reduce(malloc_size, sum_size, 1, MPI_OFFSET, MPI_SUM, &
+                                    MaxPE, MPI_COMM_WORLD, ierr)
+            endif
+
             if (rank .EQ. root) then
-            
                   call nfmpi_stage_out_env(time_staging)
 
+1002  format(A,I13,A)
 1007  format(A,A)
 1008  format('#%$: ', A, ': ', F16.2)
 1009  format('#%$: ', A, ': ', I13)
@@ -364,5 +375,13 @@
                   print 1009,' bb_metadata_size       ', bb_meta_all
                   print 1009,' bb_data_size       ', bb_data_all
                   print 1009,' bb_flush_buffer_size       ', bb_buffer_all
+
+                  print 1002, &
+                  'maximum heap memory allocted by PnetCDF internally is', &
+                  sum_size_max/1048576, ' MiB'
+                  
+                  print 1002, &
+                  'heap memory allocated by PnetCDF internally has ', &
+                  sum_size/1048576, ' MiB yet to be freed'
             endif
       end subroutine report_io_performance
