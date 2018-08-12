@@ -2,7 +2,7 @@
 #COBALT -t 5
 #COBALT -n 1
 #COBALT --attrs mcdram=cache:numa=quad:ssds=required:ssd_size=16
-#COBALT -A ATPESC
+#COBALT -A ATPESC2018
 #COBALT -q debug-flat-quad
 #COBALT -o btio_1_1.txt
 #COBALT -e btio_1_1.txt
@@ -14,7 +14,7 @@ export n_openmp_threads_per_rank=1
 export n_hyperthreads_per_core=1
 
 RUNS=(1) # Number of runs
-OUTDIR=/projects/radix-io/khou/FS_64_8M/btio
+OUTDIR=/projects/radix-io/khou/FS_56_8M/btio
 BBDIR=/local/scratch
 PPN=4
 #PPN=64
@@ -227,3 +227,4 @@ TIMEDIFF=`echo "$ENDTIME - $TSTARTTIME" | bc | awk -F"." '{print $1"."$2}'`
 echo "-------------------------------------------------------------"
 echo "total_exe_time: $TIMEDIFF"
 echo "-------------------------------------------------------------"
+
