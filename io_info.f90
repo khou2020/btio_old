@@ -2,7 +2,6 @@
 !  Copyright (C) 2013, Northwestern University
 !  See COPYRIGHT notice in top-level directory.
 !
-!  $Id: io_info.f90 2176 2013-11-06 22:13:59Z wkliao $
 
       !----< print_io_hints() >-----------------------------------------
       subroutine print_io_hints(info)
@@ -17,7 +16,6 @@
           logical                      flag
 
 2000  format('#%$: ', A, ': ', A)
-2011     FORMAT('    ',A32,' = ',A)
           call MPI_Info_get_nkeys(info, nkeys, err)
           print *, '---- MPI file info used ----'
           do i=0, nkeys-1

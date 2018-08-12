@@ -2,7 +2,6 @@
 !  Copyright (C) 2013, Northwestern University
 !  See COPYRIGHT notice in top-level directory.
 !
-!  $Id: pnetcdf_m.f90 4239 2017-03-14 23:34:39Z wkliao $
 
       module pnetcdf_m
       use mpi
@@ -16,6 +15,8 @@
       integer(KIND=MPI_OFFSET_KIND) put_size, get_size
       integer, allocatable :: buftypes(:), reqs(:), sts(:)
       logical doNonBlockingIO, doIndepIO, delayflush
+      double precision t_create, t_post_w, t_wait_w
+      double precision t_open,   t_post_r, t_wait_r
 
       private :: check
 
@@ -51,7 +52,7 @@
       sizes(3) = KMAX+4
 
       ! (ghost length = 2 on both ends)
-      gh_starts(1) = 2 
+      gh_starts(1) = 2
       gh_starts(2) = 2
       gh_starts(3) = 2
 
@@ -81,6 +82,14 @@
 
       ! local variables
       integer omode, info, err
+      double precision t
+
+      t_post_w = 0.0
+      t_wait_w = 0.0
+      t_post_r = 0.0
+      t_wait_r = 0.0
+
+      t = MPI_Wtime()
 
       pnetcdf_setup = 1
       
@@ -110,6 +119,9 @@
       ! disable data sieving for write operations
       call MPI_Info_create(info, err)
       call MPI_Info_set(info, 'romio_ds_write', 'disable', err)
+      call MPI_Info_set(info, 'romio_cb_write', 'enable', err)
+      call MPI_Info_set(info, "nc_var_align_size", "1", err);
+      call MPI_Info_set(info, "nc_in_place_swap", "enable", err);
 
       if (io_mode .EQ. 'w') then
          omode = IOR(NF_CLOBBER, NF_64BIT_DATA)
@@ -138,6 +150,14 @@
 
       ! get the info object used by MPI-IO library
       err = nfmpi_get_file_info(ncid, info_used)
+
+      t = MPI_Wtime() - t
+
+      if (io_mode .EQ. 'w') then
+          t_create = t
+      else
+          t_open = t
+      endif
 
       end function pnetcdf_setup
 
@@ -231,6 +251,9 @@
 
       integer c, err
       integer(KIND=MPI_OFFSET_KIND) starts(6), counts(6), nReqs
+      double precision t_start, t_end
+
+      t_start = MPI_Wtime()
 
       num_io = num_io +  1
 
@@ -255,7 +278,7 @@
                             u(:,:,:,:,c), nReqs, buftypes(c), %val(0))
              else
                 err = nfmpi_iput_vara(ncid, varid, starts, counts, &
-                            u(:,:,:,:,c), nReqs, buftypes(c), reqs(c))
+                                   u(:,:,:,:,c), nReqs, buftypes(c), reqs(c))
              endif
              if (err .ne. NF_NOERR) call check(err, 'In nfmpi_iput_vara:')
          else
@@ -264,12 +287,17 @@
                                         u(:,:,:,:,c), nReqs, buftypes(c))
                  if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara:')
              else
-                 err = nfmpi_put_vara_all(ncid, varid, starts, counts, &
-                                        u(:,:,:,:,c), nReqs, buftypes(c))
-                 if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara_all:')
+                  err = nfmpi_put_vara_all(ncid, varid, starts, counts, &
+                                      u(:,:,:,:,c), nReqs, buftypes(c))
+                  if (err .ne. NF_NOERR) call check(err, 'In nfmpi_put_vara_all:')
              endif
          endif
       enddo
+
+      t_end = MPI_Wtime()
+      t_post_w = t_post_w + t_end - t_start
+      t_start = t_end
+
       if (.NOT. delayflush) then
         if (doNonBlockingIO) then
             if (doIndepIO) then
@@ -285,10 +313,14 @@
         endif
       endif
 
+
       do c = 1, ncells
          if (err .ne. NF_NOERR) &
             call check(sts(c), 'In nfmpi_wait_all status error: ')
       enddo
+
+      t_end = MPI_Wtime()
+      t_wait_w = t_wait_w + t_end - t_start
 
       end subroutine pnetcdf_write
 
@@ -298,6 +330,9 @@
 
       integer c, err
       integer(KIND=MPI_OFFSET_KIND) starts(6), counts(6), nReqs
+      double precision t_start, t_end
+
+      t_start = MPI_Wtime()
 
       num_io = num_io +  1
 
@@ -327,6 +362,10 @@
          endif
       enddo
 
+      t_end = MPI_Wtime()
+      t_post_r = t_post_r + t_end - t_start
+      t_start = t_end
+
       if (doNonBlockingIO) then
          err = nfmpi_wait_all(ncid, ncells, reqs, sts)
          if (err .ne. NF_NOERR) call check(err, 'In nfmpi_wait_all:')
@@ -336,6 +375,9 @@
          if (err .ne. NF_NOERR) &
             call check(sts(c), 'In nfmpi_wait_all status error: ')
       enddo
+
+      t_end = MPI_Wtime()
+      t_wait_r = t_wait_r + t_end - t_start
 
       end subroutine pnetcdf_read
 
@@ -353,7 +395,7 @@
          if (err .ne. NF_NOERR) call check(err, 'In nfmpi_begin_indep_data:')
       endif
 
-    if (delayflush) then
+      if (delayflush) then
         if (doNonBlockingIO) then
             if (doIndepIO) then
                 err = nfmpi_wait(ncid, NF_REQ_ALL, reqs, sts)

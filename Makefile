@@ -2,8 +2,6 @@
 #  Copyright (C) 2013, Northwestern University
 #  See COPYRIGHT notice in top-level directory.
 #
-#  $Id: Makefile 2719 2014-08-24 05:27:13Z wkliao $
-#
 #
 # Please change the following variables:
 #    MPIF90        -- MPI Fortran compiler
@@ -14,6 +12,7 @@
 MPIF90      = ftn 
 FCFLAGS     = -O2
 PNETCDF_DIR = $(HOME)/local/ncmpi_eval
+SUFFIXES = .o .f90
 
 COMPILE_F90  = $(MPIF90) $(FCFLAGS) $(INC) -c
 LINK         = $(MPIF90) $(FCFLAGS)
@@ -45,7 +44,7 @@ bt.o:             bt.f90 header.o mpiio_m.o pnetcdf_m.f90
 
 PACKAGE_NAME = btio-pnetcdf-1.1.1
 
-PACKING_LIST = $(SRCS) Makefile README COPYRIGHT RELEASE_NOTES
+PACKING_LIST = $(SRCS) Makefile README.md COPYRIGHT inputbt.data RELEASE_NOTES
 
 dist:
 	/bin/rm -rf $(PACKAGE_NAME) $(PACKAGE_NAME).tar.gz

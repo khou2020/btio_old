@@ -2,7 +2,6 @@
 !  Copyright (C) 2013, Northwestern University
 !  See COPYRIGHT notice in top-level directory.
 !
-!  $Id: header.f90 2176 2013-11-06 22:13:59Z wkliao $
 
       module header
       implicit none
@@ -47,6 +46,10 @@
           allocate( cell_size(3,ncells))
 
           allocate(u(5, -2:IMAX+1, -2:JMAX+1, -2:KMAX+1, ncells))
+
+          ! initialize contents of variable u
+          call RANDOM_NUMBER(u(1:5,-2:IMAX+1,-2:JMAX+1,-2:KMAX+1,1:ncells))
+
       end subroutine allocate_variables
 
       !----< deallocate_variables >------------------------------------

@@ -16,10 +16,12 @@ NN=${SLURM_NNODES}
 let NP=NN*4
 #let NP=NN*32 
 
-DIMX=32
-DIMY=32
-DIMZ=32
-NITR=1 # 1 Itr = 5 GiB
+#EDGEL=sqrt(NP)*16
+EDGEL=32
+DIMX=${EDGEL}
+DIMY=${EDGEL}
+DIMZ=512
+NITR=8 # 5 * 8 MiB /process
 
 # Make sure BB stripe count is correct
 srun -n 1 /global/homes/k/khl7265/sc ${DW_JOB_STRIPED}/test.bin 64
@@ -74,37 +76,6 @@ do
 
     # Ncmpio NB
 
-    echo "========================== NCMPI NB ALL =========================="
-    >&2 echo "========================== NCMPI NB ALL =========================="
-    
-    echo "#%$: io_driver: ncmpi"
-    echo "#%$: number_of_nodes: ${NN}"
-    echo "#%$: number_of_proc: ${NP}"
-    echo "#%$: io_mode: nonblocking_coll_all"
-
-    echo "rm -f ${OUTDIR}/*"
-    rm -f ${OUTDIR}/*
-    
-    let IO_METHOD=13
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-
-    STARTTIME=`date +%s.%N`
-
-    srun -n ${NP} -t 3 ./btio
-
-    ENDTIME=`date +%s.%N`
-    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
-
-    echo "#%$: exe_time: $TIMEDIFF"
-
-    echo "ls -lah ${OUTDIR}"
-    ls -lah ${OUTDIR}
-    
-    echo '-----+-----++------------+++++++++--+---'
-
-    # Ncmpio NB
-
     echo "========================== NCMPI NB =========================="
     >&2 echo "========================== NCMPI NB =========================="
     
@@ -139,7 +110,7 @@ do
     echo "========================== BB LPP P ALL =========================="
     >&2 echo "========================== BB LPP P ALL =========================="
 
-    echo "#%$: io_driver: bb_lpp_private_all"
+    echo "#%$: io_driver: bb_lpp_private"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_coll"
@@ -176,7 +147,7 @@ do
     echo "========================== BB LPP S ALL =========================="
     >&2 echo "========================== BB LPP S ALL =========================="
 
-    echo "#%$: io_driver: bb_lpp_striped_all"
+    echo "#%$: io_driver: bb_lpp_striped"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_coll"
@@ -217,7 +188,7 @@ do
     echo "========================== BB LPN S ALL =========================="
     >&2 echo "========================== BB LPN S ALL =========================="
 
-    echo "#%$: io_driver: bb_lpn_striped_all"
+    echo "#%$: io_driver: bb_lpn_striped"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_coll"
@@ -258,7 +229,7 @@ do
     echo "========================== BB LPP P =========================="
     >&2 echo "========================== BB LPP P =========================="
 
-    echo "#%$: io_driver: bb_lpp_private"
+    echo "#%$: io_driver: bb_lpp_private_itr"
     echo "#%$: number_of_nodes: ${NN}"
     echo "#%$: number_of_proc: ${NP}"
     echo "#%$: io_mode: blocking_coll"
@@ -290,88 +261,6 @@ do
 
     echo '-----+-----++------------+++++++++--+---'
 
-    # BB LPP S
-
-    echo "========================== BB LPP S =========================="
-    >&2 echo "========================== BB LPP S =========================="
-
-    echo "#%$: io_driver: bb_lpp_striped"
-    echo "#%$: number_of_nodes: ${NN}"
-    echo "#%$: number_of_proc: ${NP}"
-    echo "#%$: io_mode: blocking_coll"
-
-    echo "rm -f ${OUTDIR}/*"
-    rm -f ${OUTDIR}/*
-    echo "rm -f ${DW_JOB_STRIPED}/*"
-    rm -f ${DW_JOB_STRIPED}/*
-
-    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
-
-    let IO_METHOD=2
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-
-    STARTTIME=`date +%s.%N`
-
-    srun -n ${NP} -t 3 ./btio
-
-    ENDTIME=`date +%s.%N`
-    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
-
-    unset PNETCDF_HINTS
-
-    echo "#%$: exe_time: $TIMEDIFF"
-
-    echo "ls -lah ${OUTDIR}"
-    ls -lah ${OUTDIR}
-    if [[ "${NP}" -lt 33 ]]; then
-        echo "ls -lah ${DW_JOB_STRIPED}"
-        ls -lah ${DW_JOB_STRIPED}
-    fi
-
-    echo '-----+-----++------------+++++++++--+---'
-
-    # BB LPN S
-
-    echo "========================== BB LPN S =========================="
-    >&2 echo "========================== BB LPN S =========================="
-
-    echo "#%$: io_driver: bb_lpn_striped"
-    echo "#%$: number_of_nodes: ${NN}"
-    echo "#%$: number_of_proc: ${NP}"
-    echo "#%$: io_mode: blocking_coll"
-
-    echo "rm -f ${OUTDIR}/*"
-    rm -f ${OUTDIR}/*
-    echo "rm -f ${DW_JOB_STRIPED}/*"
-    rm -f ${DW_JOB_STRIPED}/*
-
-    export PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_shared_logs=enable;nc_burst_buf_dirname=${DW_JOB_STRIPED}"
-
-    let IO_METHOD=2
-    echo "m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data"
-    m4 -D io_method=${IO_METHOD} -D n_itr=${NITR} -D dim_x=${DIMX} -D dim_y=${DIMY} -D dim_z=${DIMZ} -D out_dir=${OUTDIR} inputbt.m4 > inputbt.data
-
-    STARTTIME=`date +%s.%N`
-
-    srun -n ${NP} -t 3 ./btio
-
-    ENDTIME=`date +%s.%N`
-    TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
-
-    unset PNETCDF_HINTS
-
-    echo "#%$: exe_time: $TIMEDIFF"
-
-    echo "ls -lah ${OUTDIR}"
-    ls -lah ${OUTDIR}
-    if [[ "${NP}" -lt 33 ]]; then
-        echo "ls -lah ${DW_JOB_STRIPED}"
-        ls -lah ${DW_JOB_STRIPED}
-    fi
-
-    echo '-----+-----++------------+++++++++--+---'
-    
     # Staging
 
     echo "========================== Stage =========================="
