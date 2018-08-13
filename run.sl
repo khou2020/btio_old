@@ -22,6 +22,7 @@ DIMX=${EDGEL}
 DIMY=${EDGEL}
 DIMZ=512
 NITR=8 # 5 * 8 MiB /process
+TL=3
 
 # Make sure BB stripe count is correct
 srun -n 1 /global/homes/k/khl7265/sc ${DW_JOB_STRIPED}/test.bin 64
@@ -62,7 +63,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -93,7 +94,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -107,8 +108,8 @@ do
 
     # BB LPP P
 
-    echo "========================== BB LPP P ALL =========================="
-    >&2 echo "========================== BB LPP P ALL =========================="
+    echo "========================== BB LPP P =========================="
+    >&2 echo "========================== BB LPP P =========================="
 
     echo "#%$: io_driver: bb_lpp_private"
     echo "#%$: number_of_nodes: ${NN}"
@@ -126,7 +127,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -144,8 +145,8 @@ do
 
     # BB LPP S
 
-    echo "========================== BB LPP S ALL =========================="
-    >&2 echo "========================== BB LPP S ALL =========================="
+    echo "========================== BB LPP S =========================="
+    >&2 echo "========================== BB LPP S =========================="
 
     echo "#%$: io_driver: bb_lpp_striped"
     echo "#%$: number_of_nodes: ${NN}"
@@ -165,7 +166,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -185,8 +186,8 @@ do
 
     # BB LPN S
 
-    echo "========================== BB LPN S ALL =========================="
-    >&2 echo "========================== BB LPN S ALL =========================="
+    echo "========================== BB LPN S =========================="
+    >&2 echo "========================== BB LPN S =========================="
 
     echo "#%$: io_driver: bb_lpn_striped"
     echo "#%$: number_of_nodes: ${NN}"
@@ -206,7 +207,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -226,8 +227,8 @@ do
 
     # BB LPP P
 
-    echo "========================== BB LPP P =========================="
-    >&2 echo "========================== BB LPP P =========================="
+    echo "========================== BB LPP P Itr =========================="
+    >&2 echo "========================== BB LPP P Itr =========================="
 
     echo "#%$: io_driver: bb_lpp_private_itr"
     echo "#%$: number_of_nodes: ${NN}"
@@ -245,7 +246,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -285,7 +286,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -326,7 +327,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio
+    srun -n ${NP} -t ${TL} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -364,7 +365,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    srun -n ${NP} -t 3 ./btio_logfs
+    srun -n ${NP} -t ${TL} ./btio_logfs
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -399,8 +400,8 @@ do
 
     STARTTIME=`date +%s.%N`
     
-    srun -n ${NP} -t 3 --mem=60000 --gres=craynetwork:1 ./btio_de &
-    srun -n ${NP} -t 3 --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
+    srun -n ${NP} -t ${TL} --mem=60000 --gres=craynetwork:1 ./btio_de &
+    srun -n ${NP} -t ${TL} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
     wait
 
     ENDTIME=`date +%s.%N`
