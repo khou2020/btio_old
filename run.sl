@@ -38,8 +38,14 @@ fi
 
 echo "mkdir -p ${OUTDIR}"
 mkdir -p ${OUTDIR}
-echo "rm -rf ${DW_JOB_STRIPED}"
-rm -rf ${DW_JOB_STRIPED}
+
+if [[ "x${DW_JOB_STRIPED}" == "x" ]]; then
+    echo "BB path not set"
+    exit 0
+fi
+
+echo "rm -rf ${DW_JOB_STRIPED}/*"
+rm -rf ${DW_JOB_STRIPED}/*
 
 TSTARTTIME=`date +%s.%N`
 
@@ -72,6 +78,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
     
     echo '-----+-----++------------+++++++++--+---'
 
@@ -103,6 +111,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
     
     echo '-----+-----++------------+++++++++--+---' 
 
@@ -140,6 +150,8 @@ do
     ls -lah ${OUTDIR}
     echo "ls -lah ${DW_JOB_PRIVATE}"
     ls -lah ${DW_JOB_PRIVATE}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -181,6 +193,8 @@ do
         echo "ls -lah ${DW_JOB_STRIPED}"
         ls -lah ${DW_JOB_STRIPED}
     fi
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -222,6 +236,8 @@ do
         echo "ls -lah ${DW_JOB_STRIPED}"
         ls -lah ${DW_JOB_STRIPED}
     fi
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -259,6 +275,8 @@ do
     ls -lah ${OUTDIR}
     echo "ls -lah ${DW_JOB_PRIVATE}"
     ls -lah ${DW_JOB_PRIVATE}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -300,6 +318,8 @@ do
     ls -lah ${OUTDIR}
     echo "ls -lah ${DW_JOB_STRIPED}"
     ls -lah ${DW_JOB_STRIPED}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
     
     echo '-----+-----++------------+++++++++--+---'
     
@@ -341,6 +361,8 @@ do
     ls -lah ${OUTDIR}
     echo "ls -lah ${DW_JOB_STRIPED}"
     ls -lah ${DW_JOB_STRIPED}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -376,7 +398,9 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
-    
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
+
     echo '-----+-----++------------+++++++++--+---'
 
     # Data Elevator
@@ -401,7 +425,7 @@ do
     STARTTIME=`date +%s.%N`
     
     srun -n ${NP} -t ${TL} --mem=60000 --gres=craynetwork:1 ./btio_de &
-    srun -n ${NP} -t ${TL} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator/bin/dejob -i -a &
+    srun -n ${NP} -t ${TL} --mem=60000 --gres=craynetwork:1 /global/homes/k/khl7265/local/dataelevator_nosc/bin/dejob -i -a &
     wait
 
     ENDTIME=`date +%s.%N`
@@ -413,7 +437,9 @@ do
     ls -lah ${OUTDIR}
     echo "ls -lah ${DW_JOB_STRIPED}"
     ls -lah ${DW_JOB_STRIPED}
-
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
+    
     echo '-----+-----++------------+++++++++--+---'
 
     #let IO_METHOD=2
