@@ -187,6 +187,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -218,6 +220,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
     
     echo '-----+-----++------------+++++++++--+---'
 done
