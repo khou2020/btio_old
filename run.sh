@@ -1,11 +1,11 @@
 #!/bin/bash
-#COBALT -t 5
+#COBALT -t 10
 #COBALT -n 1
 #COBALT --attrs mcdram=cache:numa=quad:ssds=required:ssd_size=16
 #COBALT -A ATPESC2018
 #COBALT -q debug-flat-quad
-#COBALT -o btio_1_1.txt
-#COBALT -e btio_1_1.txt
+#COBALT -o btio_1_3.txt
+#COBALT -e btio_1_3.err
 
 export n_nodes=$COBALT_JOBSIZE
 export n_mpi_ranks_per_node=${PPN}
