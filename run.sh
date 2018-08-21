@@ -2,7 +2,7 @@
 #COBALT -t 10
 #COBALT -n 1
 #COBALT --attrs mcdram=cache:numa=quad:ssds=required:ssd_size=16
-#COBALT -A ATPESC2018
+#COBALT -A ecp-testbed-01
 #COBALT -q debug-flat-quad
 #COBALT -o btio_1_3.txt
 #COBALT -e btio_1_3.err
@@ -63,7 +63,9 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
-    
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
+
     echo '-----+-----++------------+++++++++--+---'
 
     # Ncmpio NB
@@ -94,7 +96,9 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
-    
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
+
     echo '-----+-----++------------+++++++++--+---' 
 
     # BB LPP P
@@ -125,6 +129,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
@@ -156,6 +162,8 @@ do
 
     echo "ls -lah ${OUTDIR}"
     ls -lah ${OUTDIR}
+    echo "lfs getstripe ${OUTDIR}"
+    lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
 
