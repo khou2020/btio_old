@@ -13,6 +13,7 @@ MPIF90      = ftn
 FCFLAGS     = -O2
 PNETCDF_DIR = $(HOME)/local/ncmpi_eval
 SUFFIXES = .o .f90
+CC			= cc
 
 COMPILE_F90  = $(MPIF90) $(FCFLAGS) $(INC) -c
 LINK         = $(MPIF90) $(FCFLAGS)
@@ -23,7 +24,7 @@ SRCS = io_info.f90 header.f90 mpiio_m.f90 make_set.f90 pnetcdf_m.f90 bt.f90
 
 OBJS = $(SRCS:.f90=.o)
 
-TARGET = btio
+TARGET = btio sleep
 
 all: $(TARGET)
 
@@ -34,6 +35,9 @@ $(TARGET): $(OBJS)
 	$(LINK) $(OBJS) -o $(TARGET) $(LIBS)
 	$(LINK) $(OBJS) -o $(TARGET)_logfs $(LIBS) -L${HOME}/local/romio_logfs/lib -lromio
 	$(LINK) $(OBJS) -o $(TARGET)_de $(LIBS) -L${HOME}/local/dataelevator_nosc/lib -lde
+
+sleep: sleep.c
+	${CC} sleep.c -o sleepmpi
 
 io_info.o:        io_info.f90 
 header.o:         header.f90 
