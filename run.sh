@@ -30,8 +30,8 @@ DIMY=${EDGEL}
 DIMZ=512
 NITR=8 # 5 * 8 MiB /process
 
-NODE_ALLOC=$(cnselect)
-NODE_USED=$(./selnode ${NN} ${NODE_ALLOC})
+NODE_USED=$(./selnode ${NN} ${COBALT_PARTNAME})
+echo "Nodes Available: ${COBALT_PARTNAME}"
 echo "Nodes Used: ${NODE_USED}"
 
 echo "mkdir -p ${OUTDIR}"

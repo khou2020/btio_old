@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+int id[65536];
+
 int cmpfunc (const void * a, const void * b) {
    return ( *(int*)a - *(int*)b );
 }
@@ -9,7 +11,6 @@ int cmpfunc (const void * a, const void * b) {
 int main(int argc, char *argv[]){
     int n, i;
     int a, b, l, s;
-    int id[1024];
     char *token;
 
     if (argc < 3){
