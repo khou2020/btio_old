@@ -30,6 +30,10 @@ DIMY=${EDGEL}
 DIMZ=512
 NITR=8 # 5 * 8 MiB /process
 
+NODE_ALLOC=$(cnselect)
+NODE_USED=$(./selnode ${NN} ${NODE_ALLOC})
+echo "Nodes Used: ${NODE_USED}"
+
 echo "mkdir -p ${OUTDIR}"
 mkdir -p ${OUTDIR}
 
@@ -55,7 +59,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t ${TL} ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL} -L ${NODE_USED} ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -68,13 +72,6 @@ do
     lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
 
     # Ncmpio NB
 
@@ -95,7 +92,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t ${TL}  ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL} -L ${NODE_USED}  ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -108,13 +105,6 @@ do
     lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---' 
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
 
     # BB LPP P
 
@@ -135,7 +125,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN}  -t ${TL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN}  -t ${TL} -L ${NODE_USED} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -148,13 +138,6 @@ do
     lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
     
     # BB LPN S
 
@@ -175,7 +158,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN}  -t ${TL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN}  -t ${TL} -L ${NODE_USED} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_shared_logs=enable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -188,13 +171,6 @@ do
     lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
     
     # BB LPP P Itr
 
@@ -215,7 +191,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t ${TL} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
+    aprun -n ${NP} -N ${PPN} -t ${TL} -L ${NODE_USED} -e PNETCDF_HINTS="nc_burst_buf=enable;nc_burst_buf_del_on_close=disable;nc_burst_buf_overwrite=enable;nc_burst_buf_dirname=${BBDIR}" ./btio
     
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -228,13 +204,6 @@ do
     lfs getstripe ${OUTDIR}
 
     echo '-----+-----++------------+++++++++--+---'
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
     
     # LogFS
 
@@ -255,7 +224,7 @@ do
 
     STARTTIME=`date +%s.%N`
 
-    aprun -n ${NP} -N ${PPN} -t ${TL} -e PNETCDF_HINTS="logfs_replayonclose=true;logfs_info_logbase=${BBDIR}/;logfs_flushblocksize=268435456" ./btio_logfs
+    aprun -n ${NP} -N ${PPN} -t ${TL} -L ${NODE_USED} -e PNETCDF_HINTS="logfs_replayonclose=true;logfs_info_logbase=${BBDIR}/;logfs_flushblocksize=268435456" ./btio_logfs
 
     ENDTIME=`date +%s.%N`
     TIMEDIFF=`echo "$ENDTIME - $STARTTIME" | bc | awk -F"." '{print $1"."$2}'`
@@ -268,13 +237,6 @@ do
     lfs getstripe ${OUTDIR}
     
     echo '-----+-----++------------+++++++++--+---'
-
-    # Sleep 5 sec    
-    echo "========================== Sleep =========================="
-    >&2 echo "========================== Sleep =========================="
-    if [[ "${SLEEPNN}" -gt 0 ]]; then
-        aprun -n ${SLEEPNN} -N 1 -t 10 ./sleepmpi 5
-    fi
 done
 
 ENDTIME=`date +%s.%N`
