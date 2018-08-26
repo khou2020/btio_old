@@ -1,11 +1,11 @@
 #!/bin/bash
 #COBALT -t 10
-#COBALT -n 1
+#COBALT -n 2
 #COBALT --attrs mcdram=cache:numa=quad:ssds=required:ssd_size=16
 #COBALT -A ecp-testbed-01
 #COBALT -q debug-flat-quad
-#COBALT -o btio_1_3.txt
-#COBALT -e btio_1_3.err
+#COBALT -o btio_1_10.txt
+#COBALT -e btio_1_10.err
 
 export n_nodes=$COBALT_JOBSIZE
 export n_mpi_ranks_per_node=${PPN}
@@ -18,7 +18,8 @@ OUTDIR=/projects/radix-io/khou/FS_56_8M/btio
 BBDIR=/local/scratch
 PPN=4
 #PPN=64
-NN=${COBALT_JOBSIZE}
+#NN=${COBALT_JOBSIZE}
+NN=1
 let NP=NN*PPN
 let SLEEPNN=${COBALT_JOBSIZE}-NN
 TL=300
@@ -30,7 +31,7 @@ DIMY=${EDGEL}
 DIMZ=512
 NITR=8 # 5 * 8 MiB /process
 
-NODE_USED=$(./selnode ${NN} ${COBALT_PARTNAME})
+NODE_USED=$(aprun -q ./selnode ${NN} ${COBALT_PARTNAME})
 echo "Nodes Available: ${COBALT_PARTNAME}"
 echo "Nodes Used: ${NODE_USED}"
 
